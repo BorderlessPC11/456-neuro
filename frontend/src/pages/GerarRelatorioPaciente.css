@@ -1,0 +1,558 @@
+/* ================================================================== */
+/* LAYOUT GERAL - COPIADO EXATAMENTE DA EVOLUCAODIARIA.CSS */
+/* ================================================================== */
+
+.dashboard-container {
+  display: flex;
+  min-height: 100vh;
+  /* IMPORTANTE: NÃO DEFINIR background-color AQUI. O body e o Sidebar já cuidam disso. */
+}
+
+.main-content {
+  flex-grow: 1; /* Ocupa o espaço restante ao lado do sidebar */
+  overflow-y: auto; /* Permite scroll no conteúdo principal */
+  padding: 0; /* Começa sem padding, o container cuida disso */
+}
+
+/* Container principal */
+.relatorio-paciente-container {
+  padding: 24px 32px;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  box-sizing: border-box;
+  background-color: #F4F6F8;
+  min-height: calc(100vh - 48px);
+}
+
+/* ================================================================== */
+/* HEADER */
+/* ================================================================== */
+
+.relatorio-header {
+  background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%);
+  color: white;
+  padding: 32px;
+  border-radius: 16px;
+  margin-bottom: 32px;
+  box-shadow: 0 8px 32px rgba(74, 144, 226, 0.2);
+}
+
+.relatorio-header h1 {
+  font-size: 32px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.relatorio-header p {
+  font-size: 16px;
+  margin: 0;
+  opacity: 0.9;
+  line-height: 1.5;
+}
+
+/* ================================================================== */
+/* SEÇÃO DE PACIENTES */
+/* ================================================================== */
+
+.pacientes-section {
+  background: white;
+  border-radius: 16px;
+  padding: 32px;
+  margin-bottom: 32px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid #E8EEF4;
+}
+
+.pacientes-section h2 {
+  font-size: 24px;
+  color: #2C3E50;
+  margin: 0 0 24px 0;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #F1F5F9;
+}
+
+.pacientes-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.paciente-card {
+  background: white;
+  border: 2px solid #E8EEF4;
+  border-radius: 12px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.paciente-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: #4A90E2;
+  transform: scaleY(0);
+  transition: transform 0.3s ease;
+}
+
+.paciente-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(74, 144, 226, 0.15);
+  border-color: #4A90E2;
+}
+
+.paciente-card:hover::before {
+  transform: scaleY(1);
+}
+
+.paciente-card.selected {
+  border-color: #4A90E2;
+  background: linear-gradient(135deg, #E6F0FF 0%, #F8FBFF 100%);
+  box-shadow: 0 8px 24px rgba(74, 144, 226, 0.2);
+}
+
+.paciente-card.selected::before {
+  transform: scaleY(1);
+}
+
+.paciente-card p {
+  margin: 8px 0;
+  color: #64748B;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.paciente-card strong {
+  color: #2C3E50;
+  font-weight: 600;
+}
+
+/* ================================================================== */
+/* VISUALIZAÇÃO DO RELATÓRIO */
+/* ================================================================== */
+
+.relatorio-visualizacao-section {
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid #E8EEF4;
+}
+
+.relatorio-actions-header {
+  background: linear-gradient(135deg, #2C3E50 0%, #34495E 100%);
+  color: white;
+  padding: 24px 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.relatorio-actions-header h2 {
+  font-size: 24px;
+  margin: 0;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.action-btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+  text-decoration: none;
+}
+
+.download-btn {
+  background: linear-gradient(135deg, #069A6B 0%, #048A5B 100%);
+  color: white;
+}
+
+.download-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(6, 154, 107, 0.3);
+}
+
+.download-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ================================================================== */
+/* SEÇÕES DO RELATÓRIO */
+/* ================================================================== */
+
+.relatorio-section {
+  padding: 32px;
+  border-bottom: 1px solid #F1F5F9;
+}
+
+.relatorio-section:last-child {
+  border-bottom: none;
+}
+
+.relatorio-section h3 {
+  font-size: 20px;
+  color: #2C3E50;
+  margin: 0 0 24px 0;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #F1F5F9;
+}
+
+/* PDI Summary */
+.pdi-summary {
+  background: #F8FBFF;
+  border: 1px solid #E6F0FF;
+  border-radius: 12px;
+  padding: 24px;
+  border-left: 4px solid #4A90E2;
+}
+
+.pdi-summary p {
+  margin: 12px 0;
+  color: #2C3E50;
+  line-height: 1.6;
+}
+
+.habilidades-list {
+  margin-top: 20px;
+}
+
+.habilidades-list strong {
+  color: #2C3E50;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.habilidades-list ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.habilidades-list li {
+  background: white;
+  padding: 12px 16px;
+  margin: 8px 0;
+  border-radius: 8px;
+  border-left: 3px solid #4A90E2;
+  color: #2C3E50;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* Filtros */
+.filter-container {
+  background: #F8FBFF;
+  border: 1px solid #E6F0FF;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.filter-container label {
+  font-weight: 600;
+  color: #2C3E50;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.select-habilidade {
+  width: 100%;
+  max-width: 400px;
+  padding: 12px 16px;
+  border: 1px solid #CBD5E1;
+  border-radius: 8px;
+  font-size: 14px;
+  background: white;
+  color: #2C3E50;
+  cursor: pointer;
+  transition: border-color 0.3s ease;
+}
+
+.select-habilidade:focus {
+  outline: none;
+  border-color: #4A90E2;
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+}
+
+.chart-description {
+  margin: 12px 0 0 0;
+  font-size: 13px;
+  color: #64748B;
+  font-style: italic;
+}
+
+/* Gráficos */
+.graficos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 24px;
+}
+
+.chart-box {
+  background: white;
+  border: 1px solid #E8EEF4;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+}
+
+.chart-box.full-width {
+  grid-column: 1 / -1;
+}
+
+.empty-chart-state {
+  text-align: center;
+  color: #64748B;
+  font-style: italic;
+  padding: 40px;
+  background: #F8FAFC;
+  border-radius: 12px;
+  border: 2px dashed #CBD5E1;
+}
+
+/* Sumário de Evoluções */
+.sumario-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.evolucao-detail-card {
+  background: #FAFBFC;
+  border: 1px solid #E8EEF4;
+  border-radius: 12px;
+  padding: 24px;
+  border-left: 4px solid #4A90E2;
+  transition: all 0.3s ease;
+}
+
+.evolucao-detail-card:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.evolucao-header-info h4 {
+  font-size: 18px;
+  color: #2C3E50;
+  margin: 0 0 8px 0;
+  font-weight: 600;
+}
+
+.evolucao-header-info span {
+  color: #64748B;
+  font-size: 14px;
+  display: block;
+  margin-bottom: 16px;
+}
+
+.evolucao-detail-card p {
+  margin: 12px 0;
+  color: #2C3E50;
+  line-height: 1.6;
+}
+
+.data-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+  margin: 20px 0;
+}
+
+.data-box {
+  background: white;
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid #E8EEF4;
+  border-left: 3px solid #069A6B;
+}
+
+.data-box strong {
+  color: #2C3E50;
+  display: block;
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+.abc-box {
+  background: #FFF8E6;
+  border: 1px solid #FFE066;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+  border-left: 4px solid #FFC300;
+}
+
+.abc-box strong {
+  color: #2C3E50;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.anexo-link {
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: #E6F0FF;
+  border-radius: 8px;
+  border-left: 3px solid #4A90E2;
+}
+
+.anexo-link a {
+  color: #4A90E2;
+  text-decoration: none;
+  font-weight: 600;
+  margin-left: 8px;
+}
+
+.anexo-link a:hover {
+  text-decoration: underline;
+}
+
+.alerta {
+  background: #FFF1F2;
+  border: 1px solid #FECACA;
+  color: #991B1B;
+  padding: 16px;
+  border-radius: 8px;
+  text-align: center;
+  font-style: italic;
+  border-left: 4px solid #EF4444;
+}
+
+/* ================================================================== */
+/* RESPONSIVIDADE */
+/* ================================================================== */
+
+@media (max-width: 1200px) {
+  .main-content {
+    margin-left: 220px; /* Sidebar menor em telas médias */
+    width: calc(100% - 240px);
+  }
+  
+  .relatorio-paciente-container {
+    padding: 20px 24px;
+  }
+  
+  .graficos-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .chart-box.full-width {
+    grid-column: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    margin-left: 0; /* Remove margin do sidebar no mobile */
+    padding-left: 0;
+    width: 100%;
+  }
+  
+  .relatorio-paciente-container {
+    padding: 16px 20px;
+  }
+  
+  .relatorio-header {
+    padding: 24px;
+  }
+  
+  .relatorio-header h1 {
+    font-size: 24px;
+  }
+  
+  .pacientes-section {
+    padding: 24px;
+  }
+  
+  .pacientes-list {
+    grid-template-columns: 1fr;
+  }
+  
+  .relatorio-actions-header {
+    padding: 20px 24px;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .action-buttons {
+    justify-content: center;
+  }
+  
+  .relatorio-section {
+    padding: 24px;
+  }
+  
+  .data-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .select-habilidade {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .relatorio-paciente-container {
+    padding: 12px 16px;
+  }
+  
+  .relatorio-header {
+    padding: 20px;
+  }
+  
+  .pacientes-section {
+    padding: 20px;
+  }
+  
+  .relatorio-section {
+    padding: 20px;
+  }
+}

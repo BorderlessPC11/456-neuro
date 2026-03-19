@@ -1,0 +1,147 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function currentUserDoc() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid));
+    }
+
+    function currentClinicaId() {
+      return currentUserDoc().data.clinicaId;
+    }
+
+    function hasSameClinica(clinicaId) {
+      return isAuthenticated() && clinicaId is string && clinicaId == currentClinicaId();
+    }
+
+    function canReadClinicResource(resourceData) {
+      return isAuthenticated() && resourceData.clinicaId is string && resourceData.clinicaId == currentClinicaId();
+    }
+
+    function canWriteClinicResource(requestData) {
+      return isAuthenticated() && requestData.clinicaId is string && requestData.clinicaId == currentClinicaId();
+    }
+
+    function validAppointmentCreate() {
+      return request.resource.data.patientId is string
+        && request.resource.data.professionalId is string
+        && request.resource.data.date is string
+        && request.resource.data.time is string
+        && request.resource.data.status is string
+        && request.resource.data.status in ["scheduled", "confirmed", "canceled", "rescheduled", "no_show", "completed"]
+        && exists(/databases/$(database)/documents/pacientes/$(request.resource.data.patientId))
+        && exists(/databases/$(database)/documents/profissionais/$(request.resource.data.professionalId))
+        && get(/databases/$(database)/documents/pacientes/$(request.resource.data.patientId)).data.clinicaId == currentClinicaId()
+        && get(/databases/$(database)/documents/profissionais/$(request.resource.data.professionalId)).data.clinicaId == currentClinicaId();
+    }
+
+    function validAppointmentUpdate() {
+      return request.resource.data.patientId == resource.data.patientId
+        && request.resource.data.clinicaId == resource.data.clinicaId
+        && request.resource.data.status is string
+        && request.resource.data.status in ["scheduled", "confirmed", "canceled", "rescheduled", "no_show", "completed"]
+        && request.resource.data.date is string
+        && request.resource.data.time is string
+        && request.resource.data.professionalId is string
+        && exists(/databases/$(database)/documents/profissionais/$(request.resource.data.professionalId))
+        && get(/databases/$(database)/documents/profissionais/$(request.resource.data.professionalId)).data.clinicaId == currentClinicaId();
+    }
+
+    match /usuarios/{userId} {
+      allow read: if isAuthenticated() && (
+        userId == request.auth.uid ||
+        (
+          resource.data.clinicaId is string &&
+          resource.data.clinicaId == currentClinicaId()
+        )
+      );
+
+      allow create: if isAuthenticated() && userId == request.auth.uid;
+
+      allow update: if isAuthenticated() && (
+        userId == request.auth.uid ||
+        (
+          resource.data.clinicaId is string &&
+          resource.data.clinicaId == currentClinicaId()
+        )
+      );
+
+      allow delete: if false;
+    }
+
+    match /clinicas/{clinicaId} {
+      allow read: if hasSameClinica(clinicaId);
+      allow create: if isAuthenticated();
+      allow update, delete: if hasSameClinica(clinicaId);
+
+      match /usuarios/{userId} {
+        allow read, write: if hasSameClinica(clinicaId);
+      }
+    }
+
+    match /pacientes/{pacienteId} {
+      allow read: if canReadClinicResource(resource.data);
+      allow create: if canWriteClinicResource(request.resource.data);
+      allow update: if canReadClinicResource(resource.data) && canWriteClinicResource(request.resource.data);
+      allow delete: if canReadClinicResource(resource.data);
+    }
+
+    match /profissionais/{profissionalId} {
+      allow read: if canReadClinicResource(resource.data);
+      allow create: if canWriteClinicResource(request.resource.data);
+      allow update: if canReadClinicResource(resource.data) && canWriteClinicResource(request.resource.data);
+      allow delete: if canReadClinicResource(resource.data);
+    }
+
+    match /terapias/{terapiaId} {
+      allow read: if canReadClinicResource(resource.data);
+      allow create: if canWriteClinicResource(request.resource.data);
+      allow update: if canReadClinicResource(resource.data) && canWriteClinicResource(request.resource.data);
+      allow delete: if canReadClinicResource(resource.data);
+    }
+
+    match /agendamentos/{agendamentoId} {
+      allow read: if canReadClinicResource(resource.data);
+      allow create: if canWriteClinicResource(request.resource.data) && validAppointmentCreate();
+      allow update: if canReadClinicResource(resource.data) && canWriteClinicResource(request.resource.data) && validAppointmentUpdate();
+      allow delete: if canReadClinicResource(resource.data);
+    }
+
+    match /appointment_history/{historyId} {
+      allow read: if canReadClinicResource(resource.data);
+      allow create: if canWriteClinicResource(request.resource.data);
+      allow update, delete: if false;
+    }
+
+    match /notificacoes/{id} {
+      allow read: if canReadClinicResource(resource.data);
+      allow create: if canWriteClinicResource(request.resource.data);
+      allow update, delete: if canReadClinicResource(resource.data) && canWriteClinicResource(request.resource.data);
+    }
+
+    match /mensagens/{id} {
+      allow read: if canReadClinicResource(resource.data);
+      allow create: if canWriteClinicResource(request.resource.data);
+      allow update, delete: if canReadClinicResource(resource.data) && canWriteClinicResource(request.resource.data);
+    }
+
+    match /recursos/{id} {
+      allow read: if canReadClinicResource(resource.data);
+      allow create: if canWriteClinicResource(request.resource.data);
+      allow update, delete: if canReadClinicResource(resource.data) && canWriteClinicResource(request.resource.data);
+    }
+
+    match /testes/{id} {
+      allow read: if canReadClinicResource(resource.data);
+      allow create: if canWriteClinicResource(request.resource.data);
+      allow update, delete: if canReadClinicResource(resource.data) && canWriteClinicResource(request.resource.data);
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

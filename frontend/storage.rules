@@ -1,0 +1,42 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function currentClinicaId() {
+      return firestore.get(/databases/(default)/documents/usuarios/$(request.auth.uid)).data.clinicaId;
+    }
+
+    function patientBelongsToCurrentClinic(patientId) {
+      return firestore.get(/databases/(default)/documents/pacientes/$(patientId)).data.clinicaId == currentClinicaId();
+    }
+
+    match /evolucoes/{patientId}/{fileName} {
+      allow read, write: if isAuthenticated() && patientBelongsToCurrentClinic(patientId);
+    }
+
+    match /documentos/{patientId}/{fileName} {
+      allow read, write: if isAuthenticated() && patientBelongsToCurrentClinic(patientId);
+    }
+
+    match /anamneses/{patientId}/{fileName} {
+      allow read, write: if isAuthenticated() && patientBelongsToCurrentClinic(patientId);
+    }
+
+    match /testes/{patientId}/{fileName} {
+      allow read, write: if isAuthenticated() && patientBelongsToCurrentClinic(patientId);
+    }
+
+    // Recursos não seguem padrão por clínica no path atual.
+    // Mantemos autenticado apenas; a recomendação é incluir clinicaId no path.
+    match /recursos/{fileName} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,593 @@
+/* Reset completo para eliminar scrollers */
+* {
+  box-sizing: border-box;
+}
+
+/* Container principal SEM scrollers */
+.adicionar-agendamento-container {
+  padding: 20px;
+  background: linear-gradient(135deg, #f8fafc 0%, #e3f2fd 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.adicionar-agendamento-container h1 {
+  color: #2c3e50;
+  font-size: 2.2rem;
+  margin-bottom: 1.5rem;
+  font-weight: 700;
+  text-align: center;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Formulário que se adapta ao conteúdo */
+.agendamento-form {
+  background: #ffffff;
+  padding: 2.5rem;
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto 20px auto; /* Margem inferior para espaçamento */
+  border: 1px solid rgba(255,255,255,0.2);
+  backdrop-filter: blur(10px);
+}
+
+/* Grid responsivo sem forçar altura */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.8rem 2.5rem;
+  width: 100%;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group.full-width {
+  grid-column: span 2;
+}
+
+/* Labels elegantes */
+.form-group label {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 0.6rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.required {
+  color: #e74c3c;
+  font-size: 1rem;
+}
+
+/* Inputs otimizados */
+.form-group input[type="text"],
+.form-group input[type="date"],
+.form-group input[type="time"],
+.form-group select,
+.form-group textarea {
+  padding: 0.9rem 1.1rem;
+  border: 2px solid #e1e8ed;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  color: #2c3e50;
+  transition: all 0.3s ease;
+  background: #ffffff;
+  width: 100%;
+  font-family: inherit;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.form-group input:hover,
+.form-group select:hover,
+.form-group textarea:hover {
+  border-color: #94a3b8;
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 100px;
+  font-family: inherit;
+}
+
+/* Checkbox elegante */
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  margin-top: 1rem;
+  grid-column: span 2;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 10px;
+  border: 2px solid #e1e8ed;
+  transition: all 0.3s ease;
+}
+
+.checkbox-group:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.checkbox-group input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin-right: 10px;
+  accent-color: #3b82f6;
+}
+
+.checkbox-group label {
+  font-size: 0.95rem;
+  font-weight: 500;
+  margin-bottom: 0;
+  cursor: pointer;
+}
+
+/* Seção de recorrência SEM altura fixa */
+.recorrencia-options {
+  grid-column: span 2;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  padding: 1.8rem;
+  border-radius: 15px;
+  margin-top: 1rem;
+  border: 2px solid #e1e8ed;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+}
+
+.recorrencia-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  margin-bottom: 1.2rem;
+  width: 100%;
+}
+
+.recorrencia-grid .form-group {
+  margin-bottom: 0;
+}
+
+.dias-semana-section {
+  grid-column: span 1;
+}
+
+/* Dias da semana em linha horizontal */
+.dias-semana-checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  margin-top: 0.8rem;
+  width: 100%;
+  justify-content: space-between;
+}
+
+.dias-semana-checkboxes label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 0.85rem;
+  color: #475569;
+  cursor: pointer;
+  font-weight: 500;
+  padding: 0.6rem 0.8rem;
+  background: #ffffff;
+  border-radius: 8px;
+  border: 2px solid #e1e8ed;
+  transition: all 0.3s ease;
+  text-align: center;
+  min-width: 50px;
+  flex: 1;
+}
+
+.dias-semana-checkboxes label:hover {
+  background: #f8fafc;
+  border-color: #3b82f6;
+  transform: translateY(-1px);
+}
+
+.dias-semana-checkboxes input[type="checkbox"]:checked + span {
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+.dias-semana-checkboxes input[type="checkbox"] {
+  margin-bottom: 0.3rem;
+  width: 16px;
+  height: 16px;
+  accent-color: #3b82f6;
+}
+
+/* Botão de submit */
+.submit-button {
+  grid-column: span 2;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+  padding: 1.1rem 2rem;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 1.5rem;
+  width: 100%;
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.submit-button:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(16, 185, 129, 0.4);
+}
+
+.submit-button:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Alertas */
+.alert {
+  grid-column: span 2;
+  padding: 1rem;
+  border-radius: 10px;
+  margin-bottom: 1.2rem;
+  font-size: 0.95rem;
+  text-align: center;
+  font-weight: 500;
+  border: 2px solid;
+}
+
+.alert-success {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  color: #065f46;
+  border-color: #10b981;
+}
+
+.alert-error {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  color: #991b1b;
+  border-color: #ef4444;
+}
+
+.alert-info {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  color: #1e3a8a;
+  border-color: #3b82f6;
+}
+
+.selected-patient-card {
+  margin-top: 0.8rem;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  border-radius: 10px;
+  padding: 0.8rem;
+  font-size: 0.9rem;
+  color: #1e293b;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.patient-search-autocomplete {
+  position: relative;
+}
+
+.patient-suggestions {
+  position: absolute;
+  z-index: 50;
+  top: calc(100% + 0.35rem);
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+.patient-suggestion-empty {
+  padding: 0.9rem 1rem;
+  color: #475569;
+  font-size: 0.9rem;
+}
+
+.patient-suggestion-item {
+  width: 100%;
+  text-align: left;
+  padding: 0.75rem 1rem;
+  background: #ffffff;
+  border: 0;
+  cursor: pointer;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.patient-suggestion-item:hover {
+  background: #eff6ff;
+}
+
+.patient-suggestion-title {
+  font-weight: 700;
+  color: #0f172a;
+  font-size: 0.92rem;
+}
+
+.patient-suggestion-sub {
+  font-size: 0.8rem;
+  color: #475569;
+}
+
+.patient-selected-readonly {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  border: 2px solid #e1e8ed;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.patient-selected-name {
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 0.15rem;
+}
+
+.patient-selected-meta {
+  font-size: 0.85rem;
+  color: #475569;
+}
+
+.patient-selected-placeholder {
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+/* Inputs com ícones */
+.input-with-icon {
+  position: relative;
+}
+
+.input-icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.input-icon {
+  position: absolute;
+  left: 1rem;
+  color: #6b7280;
+  font-size: 1rem;
+  z-index: 10;
+  transition: color 0.3s ease;
+}
+
+.form-group.input-with-icon input:focus + .input-icon,
+.form-group.input-with-icon input:focus ~ .input-icon-wrapper .input-icon {
+  color: #3b82f6;
+}
+
+.form-group.input-with-icon input[type="date"],
+.form-group.input-with-icon input[type="time"] {
+  padding-left: 2.8rem;
+  width: 100%;
+}
+
+/* Esconder indicadores padrão */
+.form-group.input-with-icon input[type="date"]::-webkit-calendar-picker-indicator,
+.form-group.input-with-icon input[type="time"]::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  left: 0;
+  top: 0;
+  cursor: pointer;
+}
+
+/* Modal de sucesso */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(5px);
+}
+
+.modal-content {
+  background: #ffffff;
+  padding: 2.5rem;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  text-align: center;
+  max-width: 450px;
+  width: 90%;
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-50px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal-icon {
+  font-size: 3.5rem;
+  color: #10b981;
+  margin-bottom: 1.2rem;
+}
+
+.modal-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 0.8rem;
+}
+
+.modal-message {
+  font-size: 1rem;
+  color: #64748b; /* Cor do texto do modal */
+  margin-bottom: 1.8rem;
+  line-height: 1.5;
+}
+
+.modal-button {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: #ffffff;
+  padding: 0.9rem 1.8rem;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 100px;
+}
+
+.modal-button:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  transform: translateY(-2px);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .adicionar-agendamento-container {
+    padding: 15px;
+  }
+
+  .adicionar-agendamento-container h1 {
+    font-size: 1.8rem;
+  }
+
+  .agendamento-form {
+    padding: 1.8rem;
+    max-width: 100%;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 1.2rem;
+  }
+
+  .form-group.full-width,
+  .checkbox-group,
+  .recorrencia-options,
+  .submit-button {
+    grid-column: span 1;
+  }
+
+  .recorrencia-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dias-semana-section {
+    grid-column: span 1;
+  }
+
+  .dias-semana-checkboxes {
+    gap: 0.6rem;
+  }
+
+  .modal-content {
+    padding: 2rem;
+    margin: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .dias-semana-checkboxes {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .dias-semana-checkboxes label {
+    flex-direction: row;
+    justify-content: flex-start;
+    min-width: auto;
+  }
+
+  .submit-button {
+    font-size: 0.9rem;
+    padding: 1rem 1.5rem;
+  }
+
+  .modal-icon {
+    font-size: 3rem;
+  }
+
+  .modal-title {
+    font-size: 1.5rem;
+  }
+}
+
+/* LAYOUT PRINCIPAL SEM SCROLLERS */
+.main-content {
+  flex: 1;
+  padding: 0;
+}
+
+.dashboard-container {
+  display: flex;
+  overflow: hidden; /* Garante que o dashboard-container não tenha scroll */
+  min-height: 100vh; /* Garante que o dashboard-container ocupe a altura total */
+}
+
+/* Solução para scroll no main-content (aplicada pelo usuário) */
+.main-content {
+  overflow-y: scroll;     /* garante rolagem funcional */
+  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+  height: 100vh; /* Mantém a altura total para o scroll funcionar */
+  padding: 0;
+  max-width: 100%;
+}
+
+.main-content::-webkit-scrollbar {
+  display: none; /* Chrome, Safari */
+}
+
+/* Corrige body caso existam margens globais */
+body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* Garante que nada vaze para além da tela */
+html {
+  overflow-x: hidden;
+}
+
+/* Corrigir box-sizing global */
+* {
+  box-sizing: border-box;
+}
+

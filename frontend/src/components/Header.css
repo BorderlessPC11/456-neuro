@@ -1,0 +1,64 @@
+.zenda-header {
+  width: 100%;
+  background: #183046;
+  color: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 32px;
+  min-height: 70px;
+  position: relative;
+  z-index: 10;
+}
+
+.zenda-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.zenda-header-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.zenda-header-sub {
+  font-size: 14px;
+  color: #d0d9e7;
+  font-weight: 400;
+}
+
+.zenda-header-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.zenda-header-avatar {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: #e0e0e0;
+}
+
+.zenda-header-username {
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+}
+
+/* Responsividade */
+@media (max-width: 700px) {
+  .zenda-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 7vw;
+  }
+  .zenda-header-user {
+    align-self: flex-end;
+  }
+}

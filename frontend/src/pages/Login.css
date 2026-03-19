@@ -1,0 +1,175 @@
+/* ================================================================== */
+/* 1. LAYOUT PRINCIPAL (TELA AZUL COMPLETA E CENTRALIZAÇÃO) */
+/* ================================================================== */
+
+.login-full-screen-container {
+    background-color: #02346B; 
+    display: flex;
+    flex-direction: column; /* Alinha logo e card em coluna */
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    width: 100vw;
+    padding: 20px;
+    box-sizing: border-box;
+    overflow: auto; 
+}
+
+/* 🛑 NOVO: Estilo para o logo fora do card (sobre o fundo azul) */
+.login-logo-top {
+    width: 300px; /* Largura solicitada */
+    height: auto;
+    margin-bottom: 30px; /* Espaço entre o logo e o card */
+    animation: fadeIn 0.8s ease-out;
+}
+
+.login-card {
+    /* Card Branco Centralizado - MAIS ENXUTO */
+    background-color: white;
+    border-radius: 12px; /* Borda levemente menor */
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); 
+    width: 100%;
+    max-width: 400px; /* Levemente mais estreito */
+    padding: 30px; /* REDUZIDO o padding interno */
+    text-align: center;
+    box-sizing: border-box;
+    animation: fadeIn 0.8s ease-out; 
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ================================================================== */
+/* 2. CABEÇALHO DENTRO DO CARD */
+/* ================================================================== */
+
+.login-title-card {
+    font-size: 22px;
+    font-weight: 600;
+    color: #334155;
+    margin: 0 0 25px 0; /* Espaçamento menor após o título */
+}
+
+/* ================================================================== */
+/* 3. FORMULÁRIO E INPUTS (SLIM) */
+/* ================================================================== */
+
+.login-form-slim {
+    display: grid;
+    gap: 15px; /* REDUZIDO o gap entre os grupos de input */
+}
+
+.form-group-slim {
+    text-align: left;
+}
+
+.form-group-slim label {
+    display: block;
+    margin-bottom: 6px; /* REDUZIDO o espaçamento abaixo do label */
+    font-weight: 600;
+    color: #475569;
+    font-size: 14px;
+}
+
+.form-group-slim input {
+    width: 100%;
+    padding: 12px 14px; /* REDUZIDO o padding interno do input */
+    border: 1px solid #ced4da;
+    border-radius: 8px; /* Borda levemente menor */
+    font-size: 16px;
+    color: #334155;
+    box-sizing: border-box;
+    transition: all 0.3s ease;
+}
+
+.form-group-slim input:focus {
+    border-color: #02346B;
+    box-shadow: 0 0 0 3px rgba(2, 52, 107, 0.1);
+    outline: none;
+}
+
+.error-message {
+    color: #dc3545;
+    text-align: center;
+    font-size: 14px;
+    margin-bottom: 5px; /* Reduzido */
+}
+
+/* ================================================================== */
+/* 4. BOTÃO DE LOGIN (VERDE - Estilo Dashboard/Sucesso) */
+/* ================================================================== */
+
+.submit-button {
+    width: 100%;
+    border: none;
+    padding: 14px 20px; /* REDUZIDO levemente o padding do botão */
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+}
+
+.submit-button.btn-success {
+    background: linear-gradient(135deg, #27ae60 0%, #069A6B 100%);
+    color: white;
+    box-shadow: 0 6px 20px rgba(39, 174, 96, 0.25);
+    margin-top: 10px; /* Espaçamento adicional após os inputs */
+}
+
+.submit-button.btn-success:hover {
+    background: linear-gradient(135deg, #219a52 0%, #047e5b 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(39, 174, 96, 0.35);
+}
+
+.submit-button.loading-btn,
+.submit-button:disabled {
+    background-color: #adb5bd;
+    color: #f8f9fa;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: translateY(0);
+}
+
+/* ================================================================== */
+/* 5. OUTROS */
+/* ================================================================== */
+
+.register-link {
+  margin-top: 15px; /* REDUZIDO o espaçamento */
+  text-align: center;
+  font-size: 13px; /* Levemente menor */
+  color: #6c757d;
+}
+
+.register-link a {
+  color: #02346B;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.register-link a:hover {
+  text-decoration: underline;
+}
+
+/* Responsividade */
+@media (max-width: 500px) {
+    .login-card {
+        padding: 25px 15px; /* REDUZIDO o padding para mobile */
+    }
+
+    .login-logo-top {
+        width: 250px; /* Reduz o logo em telas muito pequenas */
+        margin-bottom: 20px;
+    }
+}

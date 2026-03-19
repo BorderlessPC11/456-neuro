@@ -1,0 +1,414 @@
+.documentos-paciente-container {
+  padding: 40px;
+  background-color: #F4F6F8;
+  width: 100%;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+.documentos-paciente-header h1 {
+  font-size: 28px;
+  color: #2C3E50;
+  margin-bottom: 5px;
+}
+
+.documentos-paciente-header p {
+  color: #666;
+  font-size: 16px;
+  margin-bottom: 30px;
+}
+
+/* Listagem de Pacientes */
+.pacientes-section {
+  margin-bottom: 40px;
+}
+
+.pacientes-section h2 {
+  font-size: 20px;
+  color: #2C3E50;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pacientes-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.paciente-card {
+  background-color: #FFFFFF;
+  padding: 15px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.3s ease;
+}
+
+.paciente-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+  background-color: #F0F4FF;
+}
+
+.paciente-card.selected {
+  border-left: 5px solid #4A90E2;
+  background-color: #F0F4FF;
+}
+
+.paciente-card p {
+  margin: 5px 0;
+  font-size: 14px;
+  color: #2C3E50;
+}
+
+.paciente-card p strong {
+  color: #4A90E2;
+  font-weight: 600;
+}
+
+/* Seção de Documentos */
+.documentos-section {
+  background-color: #FFFFFF;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  margin-bottom: 30px;
+}
+
+.form-toggle {
+  margin-bottom: 20px;
+}
+
+.toggle-form-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #4A90E2;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.toggle-form-btn:hover {
+  background-color: #3A78C2;
+  transform: translateY(-2px);
+}
+
+/* Modal Customizado */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+.modal-content {
+  background: linear-gradient(135deg, #F9F9F9 0%, #FFFFFF 100%);
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  max-width: 500px;
+  width: 90%;
+  position: relative;
+  animation: scaleIn 0.3s ease;
+  border-left: 5px solid #4A90E2;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.modal-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 5px;
+  background: linear-gradient(to right, #4A90E2, #88D498);
+}
+
+.modal-close-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: #FF6F61;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.modal-close-btn:hover {
+  background-color: #E55A4C;
+}
+
+.modal-content h2 {
+  font-size: 18px;
+  color: #2C3E50;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.form-documento {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  margin: 0;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.form-field label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #2C3E50;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.form-field label svg {
+  color: #4A90E2;
+  font-size: 16px;
+}
+
+.form-field input,
+.form-field textarea {
+  padding: 12px;
+  border: 1px solid #CED4DA;
+  border-radius: 8px;
+  font-size: 14px;
+  background-color: #FFFFFF;
+  color: #333;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.form-field input:focus,
+.form-field textarea:focus {
+  border-color: #4A90E2;
+  box-shadow: 0 0 6px rgba(74, 144, 226, 0.3);
+  outline: none;
+}
+
+.form-field textarea {
+  resize: vertical;
+  min-height: 100px;
+  background: linear-gradient(180deg, #FFFFFF 0%, #F9FAFB 100%);
+}
+
+.form-field textarea::placeholder {
+  color: #A0AEC0;
+  font-style: italic;
+}
+
+.file-upload {
+  position: relative;
+}
+
+.file-upload input[type="file"] {
+  display: none;
+}
+
+.file-upload-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border: 1px dashed #CED4DA;
+  border-radius: 8px;
+  background-color: #F9FAFB;
+  color: #2C3E50;
+  cursor: pointer;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.file-upload-label:hover {
+  background-color: #F0F4FF;
+  border-color: #4A90E2;
+}
+
+.file-upload-label svg {
+  color: #4A90E2;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+.save-btn,
+.cancel-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.save-btn {
+  background-color: #88D498;
+  color: white;
+}
+
+.save-btn:hover {
+  background-color: #6ABF7A;
+  transform: translateY(-2px);
+}
+
+.cancel-btn {
+  background-color: #FF6F61;
+  color: white;
+}
+
+.cancel-btn:hover {
+  background-color: #E55A4C;
+  transform: translateY(-2px);
+}
+
+/* Listagem de Documentos */
+.documentos-list-section {
+  margin-top: 40px;
+}
+
+.documentos-list-section h2 {
+  font-size: 20px;
+  color: #2C3E50;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.documentos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.documento-card {
+  background-color: #FFFFFF;
+  padding: 15px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.documento-card:hover {
+  background-color: #F0F4FF;
+  transform: translateY(-3px);
+}
+
+.documento-card p {
+  margin: 5px 0;
+  font-size: 14px;
+  color: #2C3E50;
+}
+
+.documento-card p strong {
+  color: #4A90E2;
+  font-weight: 600;
+}
+
+.documento-card a {
+  color: #4A90E2;
+  text-decoration: underline;
+}
+
+.documento-card a:hover {
+  color: #3A78C2;
+}
+
+/* Animações */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .documentos-paciente-container {
+    padding: 20px;
+  }
+
+  .documentos-paciente-header h1 {
+    font-size: 24px;
+  }
+
+  .pacientes-list {
+    grid-template-columns: 1fr;
+  }
+
+  .form-documento {
+    grid-template-columns: 1fr;
+  }
+
+  .form-field input,
+  .form-field textarea {
+    font-size: 13px;
+  }
+
+  .toggle-form-btn {
+    font-size: 14px;
+    padding: 8px 16px;
+  }
+
+  .form-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .modal-content {
+    width: 95%;
+    padding: 20px;
+  }
+}

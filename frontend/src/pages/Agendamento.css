@@ -1,0 +1,51 @@
+Agendamento.css.form-agendamento {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 15px;
+  margin-bottom: 30px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.form-agendamento select,
+.form-agendamento input,
+.form-agendamento textarea {
+  padding: 10px;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  font-size: 16px;
+}
+
+.form-agendamento textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.form-agendamento button {
+  background: #007bff;
+  color: white;
+  padding: 12px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background 0.3s;
+}
+
+.form-agendamento button:hover {
+  background: #0056b3;
+}
+
+.calendario-container {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 768px) {
+  .form-agendamento {
+    grid-template-columns: 1fr;
+  }
+}
