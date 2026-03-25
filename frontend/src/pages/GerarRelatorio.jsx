@@ -4,7 +4,6 @@ import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
 import { FaFileAlt, FaChartBar, FaFileExport, FaFileInvoice, FaTable, FaChartLine, FaChartPie, FaEye, FaDownload, FaPrint, FaUsers, FaCalendarAlt } from "react-icons/fa";
-import Sidebar from "../components/Sidebar";
 import "./GerarRelatorio.css";
 
 const GerarRelatorio = () => {
@@ -287,9 +286,7 @@ const GerarRelatorio = () => {
   }
 
   return (
-    <div className="dashboard-container">
-      <Sidebar />
-      <main className="main-content">
+    <div className="gerar-relatorio-page">
         <div className="relatorio-container">
           <div className="relatorio-header">
             <h1><FaChartBar /> Gerar Relatórios</h1>
@@ -476,7 +473,6 @@ const GerarRelatorio = () => {
             </div>
           </div>
         </div>
-      </main>
     </div>
   );
 };

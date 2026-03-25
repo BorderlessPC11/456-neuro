@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import { addDoc, collection, doc, getDocs, query, where, writeBatch } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
-import Sidebar from "../components/Sidebar"; // <-- Importa o Sidebar oficial
 import "./AdicionarAgendamento.css";
 
 import { FaUser, FaUsers, FaFileAlt, FaCalendar, FaClock, FaCalendarAlt, FaCalendarCheck, FaCheckCircle, FaTimes, FaSearch } from "react-icons/fa";
@@ -338,9 +337,7 @@ const AdicionarAgendamento = () => {
   };
 
   return (
-    <div className="dashboard-container">
-      <Sidebar />
-      <main className="main-content">
+    <div className="adicionar-agendamento-page">
         <div className="adicionar-agendamento-container">
           <h1>Adicionar Novo Agendamento</h1>
           {error && (
@@ -611,7 +608,6 @@ const AdicionarAgendamento = () => {
           agendamentoData={lastAgendamento}
           totalAgendamentos={totalAgendamentosCriados}
         />
-      </main>
     </div>
   );
 };

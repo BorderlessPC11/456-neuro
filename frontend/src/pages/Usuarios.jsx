@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, where } from "firebase/firestore";
 import { db } from "../firebase";
 import { FaPlus, FaTrash, FaEdit, FaSearch, FaClipboardList, FaSave, FaBan, FaWhatsapp } from "react-icons/fa";
-import Sidebar from "../components/Sidebar";
 import "./Usuarios.css";
 
 const roles = [
@@ -117,9 +116,7 @@ const Usuarios = () => {
   );
 
   return (
-    <div className="dashboard-container">
-      <Sidebar />
-      <main className="main-content usuarios-main">
+    <div className="usuarios-page">
         <div className="usuarios-header">
           <h1><FaClipboardList /> Usuários</h1>
           <p>Gerencie os usuários do sistema (excluindo terapeutas).</p>
@@ -289,7 +286,6 @@ const Usuarios = () => {
             </div>
           ))}
         </div>
-      </main>
     </div>
   );
 };

@@ -14,7 +14,6 @@ import {
   FaArrowLeft, FaCheck, FaLock, FaBuilding, FaClock, FaCommentDots, FaQuestionCircle,
   FaBullseye, FaChild, FaCalendarDay, FaListAlt, FaNotesMedical, FaStickyNote, FaThumbsUp, FaTasks, FaMapMarkerAlt, FaSmile, FaEye
 } from "react-icons/fa";
-import Sidebar from "../components/Sidebar";
 import "./EvolucaoDiaria.css"; 
 
 // Componente auxiliar para botões de seleção de chip
@@ -799,9 +798,7 @@ const EvolucaoDiaria = () => {
 
 
   return (
-    <div className="dashboard-container">
-      <Sidebar />
-      <main className="main-content">
+    <div className="evolucao-page">
         <div className="evolucao-diaria-container">
           <div className="evolucao-diaria-header">
             {/* TÍTULO CORRIGIDO AQUI */}
@@ -1000,8 +997,6 @@ const EvolucaoDiaria = () => {
         
         {/* NOVO: MODAL DE VISUALIZAÇÃO */}
         {isViewModalOpen && renderViewModal()}
-        
-      </main>
     </div>
   );
 };

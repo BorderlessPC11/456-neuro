@@ -154,13 +154,13 @@
 }
 
 .dashboard-header h1 {
-  color: #2C3E50;
+  color: var(--color-text);
   font-size: 28px;
   margin-bottom: 5px;
 }
 
 .dashboard-header p {
-  color: #666;
+  color: var(--color-muted);
   font-size: 16px;
   margin-bottom: 30px;
 }
@@ -175,10 +175,10 @@
 .summary-card {
   background-color: #fff;
   padding: 20px;
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   text-align: center;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.06);
-  border: 1px solid #e0e0e0;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border);
   transition: transform 0.2s ease;
 }
 
@@ -188,19 +188,19 @@
 
 .summary-card .card-icon {
   font-size: 28px;
-  color: #4A90E2;
+  color: rgba(2, 6, 23, 0.85);
   margin-bottom: 10px;
 }
 
 .summary-card h3 {
   font-size: 24px;
-  color: #2C3E50;
+  color: var(--color-text);
   margin: 0;
 }
 
 .summary-card p {
   font-size: 14px;
-  color: #666;
+  color: var(--color-muted);
   margin: 5px 0 0;
 }
 
@@ -214,16 +214,16 @@
 .section {
   background-color: #fff;
   padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.06);
-  border: 1px solid #e0e0e0;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border);
   flex: 1;
   min-width: 300px;
 }
 
 .section h2 {
   font-size: 20px;
-  color: #2C3E50;
+  color: var(--color-text);
   margin-bottom: 15px;
 }
 
@@ -235,8 +235,8 @@
 
 .agendamento-item {
   padding: 10px 0;
-  border-bottom: 1px solid #eee;
-  color: #2C3E50;
+  border-bottom: 1px solid rgba(2, 6, 23, 0.08);
+  color: var(--color-text);
   font-size: 14px;
   display: flex;
   gap: 8px;
@@ -253,17 +253,17 @@
 }
 
 .ver-todos-btn {
-  background-color: #069A6B;
+  background-color: var(--color-rail);
   color: white;
   padding: 10px 20px;
   border: none;
-  border-radius: 5px;
+  border-radius: 14px;
   cursor: pointer;
   transition: background-color 0.3s ease;
 }
 
 .ver-todos-btn:hover {
-  background-color: #068a61;
+  background-color: rgba(2, 6, 23, 0.9);
 }
 
 .notificacoes-list {
@@ -286,23 +286,23 @@
 
 .notificacao-icon {
   font-size: 18px;
-  color: #FF6F61;
+  color: rgba(2, 6, 23, 0.85);
 }
 
 .notificacao-item p {
   margin: 0;
-  color: #2C3E50;
+  color: var(--color-text);
   font-size: 14px;
 }
 
 .notificacao-data {
   font-size: 12px;
-  color: #666;
+  color: var(--color-muted);
 }
 
 .quick-actions h2 {
   font-size: 20px;
-  color: #2C3E50;
+  color: var(--color-text);
   margin-bottom: 15px;
 }
 
@@ -315,30 +315,35 @@
 .action-card {
   background-color: #fff;
   padding: 20px;
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   text-align: center;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.06);
-  border: 1px solid #e0e0e0;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border);
   transition: transform 0.2s ease;
   cursor: pointer;
 }
 
 .action-card:hover {
   transform: translateY(-4px);
-  background-color: #F0F4FF;
+  background-color: rgba(2, 6, 23, 0.02);
 }
 
 .action-icon {
   font-size: 28px;
-  color: #FFD60A;
+  color: rgba(2, 6, 23, 0.85);
   margin-bottom: 10px;
 }
 
 .action-card span {
   display: block;
   font-size: 15px;
-  font-weight: 600;
-  color: #2C3E50;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.dashboard-page .action-card:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .logout-box {
@@ -435,3 +440,4 @@
     padding: 10px;
   }
 }
+

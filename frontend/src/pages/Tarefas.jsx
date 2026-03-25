@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, orderBy } from "firebase/firestore";
 import { db } from "../firebase";
 import { FaPlus, FaTrash, FaEdit, FaCheck, FaTimes, FaSearch, FaClipboardList, FaSave, FaBan } from "react-icons/fa";
-import Sidebar from "../components/Sidebar";
 import "./Tarefas.css";
 
 const prioridades = [
@@ -125,9 +124,7 @@ const Tarefas = () => {
   const totalConcluidas = tarefasFiltradas.filter((t) => t.status === "concluida").length;
 
   return (
-    <div className="dashboard-container">
-      <Sidebar />
-      <main className="main-content tarefas-main">
+    <div className="tarefas-page">
         <div className="tarefas-header">
           <h1><FaClipboardList /> Tarefas</h1>
           <p>Gerencie as tarefas pendentes e concluídas da clínica.</p>
@@ -293,7 +290,6 @@ const Tarefas = () => {
           <span><strong>Pendentes:</strong> {totalPendentes}</span>
           <span><strong>Concluídas:</strong> {totalConcluidas}</span>
         </div>
-      </main>
     </div>
   );
 };

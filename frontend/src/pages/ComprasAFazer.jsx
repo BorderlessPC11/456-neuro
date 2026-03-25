@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, orderBy } from "firebase/firestore";
 import { db } from "../firebase";
 import { FaPlus, FaTrash, FaEdit, FaCheck, FaTimes, FaSearch, FaCartPlus, FaClipboardList, FaSave, FaBan } from "react-icons/fa";
-import Sidebar from "../components/Sidebar";
 import "./ComprasAFazer.css";
 
 const prioridades = [
@@ -131,9 +130,7 @@ const ComprasAFazer = () => {
   }, 0);
 
   return (
-    <div className="dashboard-container">
-      <Sidebar />
-      <main className="main-content compras-main">
+    <div className="compras-page">
         <div className="compras-header">
           <h1><FaClipboardList /> Compras a Fazer</h1>
           <p>Organize, adicione, marque como comprada ou exclua suas compras e itens pendentes.</p>
@@ -358,7 +355,6 @@ const ComprasAFazer = () => {
             {totalGeral.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
           </div>
         )}
-      </main>
     </div>
   );
 };

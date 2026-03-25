@@ -1,8 +1,7 @@
 // src/pages/Administracao.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import "./Dashboard.css";
-import logo from "./logo.png";
+import "./Administracao.css";
 import { db, auth } from "../firebase";
 import { doc, getDoc } from "firebase/firestore";
 import {
@@ -62,75 +61,33 @@ const Administracao = () => {
   };
 
   return (
-    <div className="dashboard-container">
-      {/* Sidebar */}
-      <aside className="sidebar">
-        <div className="logo-container">
-          <img src={logo} alt="Logo Neuroverse" className="logo" />
-        </div>
-
-        <div className="user-clinica-box">
-          <div className="info-titulo">Bem-vindo(a)</div>
-          <div className="info-nome">
-            <FaUser className="icon" />
-            <span>{nomeUsuario}</span>
-          </div>
-          <div className="info-clinica">
-            <FaClinicMedical className="icon" />
-            <span>{nomeClinica}</span>
-          </div>
-        </div>
-
-        <nav className="menu">
-          <ul>
-            <li>
-              <Link to="/dashboard" style={{ textDecoration: "none", color: "white" }}>
-                Dashboard
-              </Link>
-            </li>
-            <li>
-              <Link to="/administracao" style={{ textDecoration: "none", color: "white" }}>
-                <FaTools style={{ marginRight: "6px" }} />
-                Administração
-              </Link>
-            </li>
-            <li>
-              <Link to="/profissionais" style={{ textDecoration: "none", color: "white" }}>
-                Profissionais
-              </Link>
-            </li>
-          </ul>
-        </nav>
-
-        <div className="logout-box" onClick={handleLogout}>
-          <FaSignOutAlt className="icon" />
-          <span>Sair</span>
-        </div>
-      </aside>
-
-      {/* Conteúdo */}
-      <main className="main-content">
+    <div className="administracao-page">
+      <div className="administracao-header">
         <h1>Administração</h1>
-        <div className="cards-grid">
-         <Link to="/pacientes" className="card">
-  <FaUserFriends className="card-icon" />
-  <span>Pacientes</span>
-</Link>
+        <p>Gerencie áreas gerais do sistema.</p>
+      </div>
 
-          <div className="card">
-            <FaCalendarAlt className="card-icon" />
-            <span>Agenda</span>
-          </div>
-          <div className="card">
-            <FaMoneyBillWave className="card-icon" />
-            <span>Financeiro</span>
-          </div>
-          <Link to="/profissionais" className="card">
-            <FaUserMd className="card-icon" />
-            <span>Profissionais</span>
-          </Link>
+      <div className="administracao-cards-grid">
+        <Link to="/pacientes" className="administracao-card">
+          <FaUserFriends className="card-icon" />
+          <span>Pacientes</span>
+        </Link>
+
+        <div className="administracao-card" role="button" tabIndex={0}>
+          <FaCalendarAlt className="card-icon" />
+          <span>Agenda</span>
         </div>
-      </main>
+
+        <div className="administracao-card" role="button" tabIndex={0}>
+          <FaMoneyBillWave className="card-icon" />
+          <span>Financeiro</span>
+        </div>
+
+        <Link to="/profissionais" className="administracao-card">
+          <FaUserMd className="card-icon" />
+          <span>Profissionais</span>
+        </Link>
+      </div>
     </div>
   );
 };

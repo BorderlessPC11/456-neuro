@@ -24,6 +24,7 @@ import Despesas from "./pages/Despesas";
 import Tarefas from "./pages/Tarefas";
 import Usuarios from "./pages/Usuarios"; // Novo import
 import Cadastro from "./pages/Cadastro";
+import AppShellLayout from "./layout/AppShell.jsx";
 
 import "./App.css";
 
@@ -33,31 +34,33 @@ function App() {
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/cadastro" element={<Cadastro />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/pacientes" element={<Pacientes />} />
-        <Route path="/evolucao" element={<EvolucaoDiaria />} />
-        <Route path="/anamnese" element={<Anamnese />} />
-        <Route path="/documentos-paciente" element={<DocumentosPaciente />} />
-        <Route path="/gerar-relatorio-paciente" element={<GerarRelatorioPaciente />} />
-        <Route path="/terapias" element={<Terapias />} />
-        <Route path="/planejamento" element={<Planejamento />} />
-        <Route path="/testes" element={<Testes />} />
-        <Route path="/agenda-geral" element={<AgendaGeral />} />
-        <Route path="/adicionar-agendamento" element={<AdicionarAgendamento />} />
-        <Route path="/notificacoes" element={<Notificacoes />} />
-        <Route path="/comunicacao" element={<Comunicacao />} />
-        <Route path="/gerar-relatorio" element={<GerarRelatorio />} />
-        <Route path="/profissionais" element={<Profissionais />} />
-        <Route path="/administracao" element={<Administracao />} />
-        {/* Rotas para Compras a Fazer */}
-        <Route path="/compras-a-fazer" element={<ComprasAFazer />} />
-        <Route path="/compras" element={<ComprasAFazer />} />
-        {/* Rota para Despesas */}
-        <Route path="/despesas" element={<Despesas />} />
-        {/* Rota para Tarefas */}
-        <Route path="/tarefas" element={<Tarefas />} />
-        {/* Nova rota para Usuários */}
-        <Route path="/usuarios" element={<Usuarios />} />
+        <Route element={<AppShellLayout />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/pacientes" element={<Pacientes />} />
+          <Route path="/evolucao" element={<EvolucaoDiaria />} />
+          <Route path="/anamnese" element={<Anamnese />} />
+          <Route path="/documentos-paciente" element={<DocumentosPaciente />} />
+          <Route path="/gerar-relatorio-paciente" element={<GerarRelatorioPaciente />} />
+          <Route path="/terapias" element={<Terapias />} />
+          <Route path="/planejamento" element={<Planejamento />} />
+          <Route path="/testes" element={<Testes />} />
+          <Route path="/agenda-geral" element={<AgendaGeral />} />
+          <Route path="/adicionar-agendamento" element={<AdicionarAgendamento />} />
+          <Route path="/notificacoes" element={<Notificacoes />} />
+          <Route path="/comunicacao" element={<Comunicacao />} />
+          <Route path="/gerar-relatorio" element={<GerarRelatorio />} />
+          <Route path="/profissionais" element={<Profissionais />} />
+          <Route path="/administracao" element={<Administracao />} />
+          {/* Rotas para Compras a Fazer */}
+          <Route path="/compras-a-fazer" element={<ComprasAFazer />} />
+          <Route path="/compras" element={<ComprasAFazer />} />
+          {/* Rota para Despesas */}
+          <Route path="/despesas" element={<Despesas />} />
+          {/* Rota para Tarefas */}
+          <Route path="/tarefas" element={<Tarefas />} />
+          {/* Nova rota para Usuários */}
+          <Route path="/usuarios" element={<Usuarios />} />
+        </Route>
       </Routes>
     </Router>
   );

@@ -10,7 +10,6 @@ import {
   where,
 } from "firebase/firestore";
 import { db } from "../firebase";
-import Sidebar from "../components/Sidebar";
 import { useAuth } from "../context/AuthContext";
 import "./Planejamento.css";
 
@@ -637,10 +636,8 @@ const Planejamento = () => {
   if (authLoading) return <div className="loading-container">Carregando…</div>;
 
   return (
-    <div className="dashboard-container">
-      <Sidebar />
-      <main className="main-content">
-        <div className="pdi-container">
+    <div className="planejamento-page">
+      <div className="pdi-container">
           <div className="pdi-header">
             <h1>PDI — Plano de Desenvolvimento Individual</h1>
             <p>Crie e acompanhe o PDI dos pacientes.</p>
@@ -908,7 +905,6 @@ const Planejamento = () => {
           {/* FIM DA SEÇÃO ATUALIZADA */}
 
         </div>
-      </main>
 
       {/* MODAL / WIZARD */}
       {isOpen && (

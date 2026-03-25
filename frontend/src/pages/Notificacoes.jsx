@@ -20,7 +20,6 @@ import {
   FaUsers,
   FaComments,
 } from "react-icons/fa";
-import Sidebar from "../components/Sidebar";
 import "./Notificacoes.css";
 
 const Notificacoes = () => {
@@ -291,10 +290,8 @@ const Notificacoes = () => {
   }
 
   return (
-    <div className="dashboard-container">
-      <Sidebar />
-      <main className="main-content">
-        <div className="notificacoes-container">
+    <div className="notificacoes-page">
+      <div className="notificacoes-container">
           <div className="notificacoes-header">
             <h1><FaBell /> Gerenciar Notificações</h1>
             <p>Envie avisos e comunicados para pacientes e profissionais da clínica</p>
@@ -555,7 +552,6 @@ const Notificacoes = () => {
             </div>
           )}
         </div>
-      </main>
     </div>
   );
 };

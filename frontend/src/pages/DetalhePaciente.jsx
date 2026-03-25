@@ -35,7 +35,6 @@ import {
   FaFolderOpen,
   FaChartBar
 } from "react-icons/fa";
-import Sidebar from "../components/Sidebar";
 import "./DetalhePaciente.css";
 
 const DetalhePaciente = () => {
@@ -713,11 +712,8 @@ const DetalhePaciente = () => {
 
 
 return (
-    <div className="dashboard-container">
-      <Sidebar />
-
-      <main className="main-content">
-        <div className="detalhe-paciente-container">
+    <div className="detalhe-paciente-page">
+      <div className="detalhe-paciente-container">
           <div className="detalhe-paciente-header">
             <button className="back-btn" onClick={handleBack}>
               <FaArrowLeft /> Voltar
@@ -1677,7 +1673,6 @@ return (
 
           </div>
         </div>
-      </main>
     </div>
   );
 };

@@ -1,0 +1,75 @@
+.app-shell-loading {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-muted);
+}
+
+.app-shell-bg {
+  min-height: 100vh;
+  background: var(--color-bg);
+  padding: 0;
+}
+
+.app-shell-frame {
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  background: var(--color-frame);
+  border-radius: 0;
+  padding: 14px;
+  display: flex;
+  gap: 14px;
+  align-items: stretch;
+}
+
+.app-shell-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-shell-content {
+  flex: 1;
+  min-height: 0;
+  background: var(--color-bg);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+}
+
+/* Legacy layout compatibility
+   Some existing pages still include old `.sidebar` / `.main-content` wrappers.
+   When used inside AppShell, we hide them to avoid double layout/padding. */
+.app-shell-content .sidebar {
+  display: none !important;
+}
+
+.app-shell-content .main-content {
+  padding: 0 !important;
+  background: transparent !important;
+  min-height: unset !important;
+  margin-left: 0 !important;
+}
+
+.app-shell-content .dashboard-container {
+  display: block !important;
+  height: auto !important;
+  overflow: visible !important;
+}
+
+@media (max-width: 900px) {
+  .app-shell-frame {
+    border-radius: 0;
+    padding: 0;
+    gap: 0;
+  }
+
+  .app-shell-content {
+    border-radius: 0;
+    padding: 16px;
+    min-height: 100vh;
+  }
+}
+

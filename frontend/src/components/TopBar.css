@@ -1,0 +1,159 @@
+.topbar {
+  height: var(--topbar-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 6px 6px 6px;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 220px;
+}
+
+.topbar-hamburger {
+  display: none;
+  border: 0;
+  cursor: pointer;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  transition: background 0.2s ease;
+}
+
+.topbar-hamburger svg {
+  font-size: 18px;
+}
+
+.topbar-greeting {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.topbar-greeting-title {
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  color: rgba(15, 23, 42, 0.65);
+  text-transform: uppercase;
+}
+
+.topbar-greeting-sub {
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--color-text);
+  margin-top: 4px;
+}
+
+.topbar-center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.topbar-search {
+  width: min(520px, 100%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.04);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.topbar-search-icon {
+  color: rgba(15, 23, 42, 0.6);
+  font-size: 14px;
+}
+
+.topbar-search input {
+  border: 0;
+  outline: none;
+  background: transparent;
+  width: 100%;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 220px;
+  justify-content: flex-end;
+}
+
+.icon-btn {
+  border: 0;
+  cursor: pointer;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.04);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  color: var(--color-text);
+  display: grid;
+  place-items: center;
+}
+
+.icon-btn svg {
+  font-size: 16px;
+}
+
+.icon-btn:focus-visible,
+.avatar-btn:focus-visible,
+.topbar-hamburger:focus-visible {
+  box-shadow: var(--focus-ring);
+  outline: none;
+}
+
+.avatar-btn {
+  border: 0;
+  cursor: pointer;
+  width: 44px;
+  height: 44px;
+  border-radius: 16px;
+  background: rgba(2, 6, 23, 0.06);
+  border: 1px solid rgba(2, 6, 23, 0.12);
+  color: rgba(2, 6, 23, 0.85);
+  font-weight: 1000;
+  display: grid;
+  place-items: center;
+}
+
+.avatar-initials {
+  font-weight: 1000;
+  letter-spacing: 0.5px;
+}
+
+@media (max-width: 900px) {
+  .topbar-left {
+    min-width: 0;
+  }
+  .topbar-greeting {
+    display: none;
+  }
+  .topbar-search {
+    width: 100%;
+  }
+  .topbar-center {
+    justify-content: stretch;
+  }
+  .topbar-hamburger {
+    display: grid;
+    place-items: center;
+  }
+  .topbar-right {
+    min-width: 0;
+  }
+}
+

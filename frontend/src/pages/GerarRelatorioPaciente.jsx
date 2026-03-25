@@ -9,7 +9,6 @@ import {
   FaFileAlt, FaBrain, FaChartArea, FaUser, FaMapMarkerAlt, FaClock, FaSmile,
   FaQuestionCircle, FaThumbsUp, FaTasks, FaHandsHelping, FaLightbulb, FaCogs
 } from "react-icons/fa";
-import Sidebar from "../components/Sidebar";
 import { Line, Bar } from 'react-chartjs-2';
 import 'chart.js/auto';
 import "./GerarRelatorioPaciente.css";
@@ -472,9 +471,7 @@ const GerarRelatorioPaciente = () => {
   const estatisticas = calcularEstatisticas();
   
   return (
-    <div className="dashboard-container">
-      <Sidebar />
-      <main className="main-content">
+    <div className="gerar-relatorio-paciente-page">
         <div className="relatorio-paciente-container">
           {/* HEADER */}
           <div className="relatorio-header">
@@ -741,7 +738,6 @@ const GerarRelatorioPaciente = () => {
             </div>
           )}
         </div>
-      </main>
     </div>
   );
 };

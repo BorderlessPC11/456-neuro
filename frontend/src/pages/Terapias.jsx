@@ -15,7 +15,6 @@ import {
   FaClipboardList,
   FaBrain,
 } from "react-icons/fa";
-import Sidebar from "../components/Sidebar"; // AGORA É IMPORTADO!
 import "./Terapias.css";
 
 const Terapias = () => {
@@ -146,9 +145,7 @@ const Terapias = () => {
   };
 
   return (
-    <div className="dashboard-container">
-      <Sidebar />
-      <main className="main-content">
+    <div className="terapias-page">
         <div className="terapias-container">
           <div className="terapias-header">
             <h1>Registro de Terapias</h1>
@@ -278,7 +275,6 @@ const Terapias = () => {
             )}
           </div>
         </div>
-      </main>
     </div>
   );
 };

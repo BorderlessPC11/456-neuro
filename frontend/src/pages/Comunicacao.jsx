@@ -24,7 +24,6 @@ import {
   FaFileAlt,
   FaEnvelope,
 } from "react-icons/fa";
-import Sidebar from "../components/Sidebar";
 import "./Comunicacao.css";
 
 const Comunicacao = () => {
@@ -273,10 +272,7 @@ const Comunicacao = () => {
   }
 
   return (
-    <div className="dashboard-container">
-      <Sidebar />
-
-      <main className="main-content">
+    <div className="comunicacao-page">
         <div className="comunicacao-header">
           <h1><FaComments /> Comunicação</h1>
           <p>Gerencie mensagens e comunicações com pacientes</p>
@@ -526,7 +522,6 @@ const Comunicacao = () => {
             </div>
           )}
         </div>
-      </main>
     </div>
   );
 };

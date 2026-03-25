@@ -10,7 +10,6 @@ import {
   FaPlus, FaTimes, FaFileImage, FaFile, FaSave, FaNotesMedical, FaCalendarDay, FaUpload,
   FaUser, FaHeartbeat, FaUsers, FaSchool
 } from "react-icons/fa";
-import Sidebar from "../components/Sidebar";
 import "./Anamnese.css";
 
 const Anamnese = () => {
@@ -164,70 +163,67 @@ const Anamnese = () => {
   };
 
   return (
-    <div className="dashboard-container">
-      <Sidebar />
+    <div className="anamnese-page">
+      <div className="anamnese-container">
+        <div className="anamnese-header">
+          <h1>Anamnese</h1>
+          <p>Registre e visualize as anamneses dos pacientes da clínica.</p>
+        </div>
 
-      <main className="main-content">
-        <div className="anamnese-container">
-          <div className="anamnese-header">
-            <h1>Anamnese</h1>
-            <p>Registre e visualize as anamneses dos pacientes da clínica.</p>
-          </div>
-
-          {/* Listagem de Pacientes */}
-          <div className="pacientes-section">
-            <h2>Lista de Pacientes</h2>
-            {pacientes.length > 0 ? (
-              <div className="pacientes-list">
-                {pacientes.map((paciente) => (
-                  <div
-                    key={paciente.id}
-                    className={`paciente-card ${selectedPaciente?.id === paciente.id ? "selected" : ""}`}
-                    onClick={() => handleSelectPaciente(paciente)}
-                  >
-                    <div className="paciente-info">
-                      <p><strong>Nome:</strong> {paciente.nome}</p>
-                      <p><strong>Idade:</strong> {paciente.idade || "Não informado"}</p>
-                      <p><strong>CID:</strong> {paciente.cid || "Não informado"}</p>
-                    </div>
+        {/* Listagem de Pacientes */}
+        <div className="pacientes-section">
+          <h2>Lista de Pacientes</h2>
+          {pacientes.length > 0 ? (
+            <div className="pacientes-list">
+              {pacientes.map((paciente) => (
+                <div
+                  key={paciente.id}
+                  className={`paciente-card ${selectedPaciente?.id === paciente.id ? "selected" : ""}`}
+                  onClick={() => handleSelectPaciente(paciente)}
+                >
+                  <div className="paciente-info">
+                    <p><strong>Nome:</strong> {paciente.nome}</p>
+                    <p><strong>Idade:</strong> {paciente.idade || "Não informado"}</p>
+                    <p><strong>CID:</strong> {paciente.cid || "Não informado"}</p>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <p>Nenhum paciente encontrado.</p>
-            )}
-          </div>
-
-          {/* Listagem de Anamneses e Botão para Abrir o Modal */}
-          {selectedPaciente && (
-            <>
-              <div className="anamnese-section">
-                <div className="form-toggle">
-                  <button onClick={openModal} className="toggle-form-btn">
-                    <FaPlus /> Adicionar Nova Anamnese
-                  </button>
                 </div>
+              ))}
+            </div>
+          ) : (
+            <p>Nenhum paciente encontrado.</p>
+          )}
+        </div>
 
-                {/* Modal Customizado */}
-                {isModalOpen && (
-                  <div className="modal-overlay">
-                    <div className="modal-content">
-                      <button className="modal-close-btn" onClick={handleCancel}>
-                        <FaTimes />
-                      </button>
-                      <h2>Adicionar Nova Anamnese para {selectedPaciente.nome}</h2>
-                      <form className="form-anamnese" onSubmit={handleSubmit}>
-                        <div className="form-field">
-                          <label><FaCalendarDay /> Data:</label>
-                          <DatePicker
-                            selected={form.data}
-                            onChange={handleDateChange}
-                            dateFormat="dd/MM/yyyy"
-                            className="custom-datepicker"
-                            placeholderText="Selecione a data"
-                            required
-                          />
-                        </div>
+        {/* Listagem de Anamneses e Botão para Abrir o Modal */}
+        {selectedPaciente && (
+          <>
+            <div className="anamnese-section">
+              <div className="form-toggle">
+                <button onClick={openModal} className="toggle-form-btn">
+                  <FaPlus /> Adicionar Nova Anamnese
+                </button>
+              </div>
+
+              {/* Modal Customizado */}
+              {isModalOpen && (
+                <div className="modal-overlay">
+                  <div className="modal-content">
+                    <button className="modal-close-btn" onClick={handleCancel}>
+                      <FaTimes />
+                    </button>
+                    <h2>Adicionar Nova Anamnese para {selectedPaciente.nome}</h2>
+                    <form className="form-anamnese" onSubmit={handleSubmit}>
+                      <div className="form-field">
+                        <label><FaCalendarDay /> Data:</label>
+                        <DatePicker
+                          selected={form.data}
+                          onChange={handleDateChange}
+                          dateFormat="dd/MM/yyyy"
+                          className="custom-datepicker"
+                          placeholderText="Selecione a data"
+                          required
+                        />
+                      </div>
                         <div className="form-field">
                           <label><FaNotesMedical /> Histórico Gestacional:</label>
                           <textarea
@@ -352,55 +348,54 @@ const Anamnese = () => {
                 )}
               </div>
 
-              {/* Listagem de Anamneses do Paciente Selecionado */}
-              <div className="anamneses-section">
-                <h2>Anamneses de {selectedPaciente.nome}</h2>
-                {anamneses.length > 0 ? (
-                  <div className="anamneses-list">
-                    {anamneses
-                      .sort((a, b) => new Date(b.criadoEm) - new Date(a.criadoEm))
-                      .map((anamnese, index) => (
-                        <div key={index} className="anamnese-card">
-                          <div className="anamnese-content">
-                            <div className="anamnese-row">
-                              <p className="data-field"><FaCalendarDay /> <strong>Data:</strong> {anamnese.data}</p>
-                              <p className="field-item"><FaNotesMedical /> <strong>Histórico Gestacional:</strong> {anamnese.historicoGestacional}</p>
-                            </div>
-                            <div className="anamnese-row">
-                              <p className="field-item"><FaNotesMedical /> <strong>Desenvolvimento Motor:</strong> {anamnese.desenvolvimentoMotor}</p>
-                              <p className="field-item"><FaNotesMedical /> <strong>Desenvolvimento da Linguagem:</strong> {anamnese.desenvolvimentoLinguagem}</p>
-                            </div>
-                            <div className="anamnese-row">
-                              <p className="field-item"><FaNotesMedical /> <strong>Comportamento Social:</strong> {anamnese.comportamentoSocial}</p>
-                              <p className="field-item"><FaHeartbeat /> <strong>Histórico Médico:</strong> {anamnese.historicoMedico}</p>
-                            </div>
-                            <div className="anamnese-row">
-                              <p className="field-item"><FaUsers /> <strong>Histórico Familiar:</strong> {anamnese.historicoFamiliar}</p>
-                              <p className="field-item"><FaSchool /> <strong>Escolaridade:</strong> {anamnese.escolaridade}</p>
-                            </div>
-                            <div className="anamnese-row">
-                              <p className="field-item"><FaNotesMedical /> <strong>Observações:</strong> {anamnese.observacoes || "Nenhuma observação"}</p>
-                            </div>
-                            <p className="created-field"><FaCalendarDay /> <strong>Criado em:</strong> {new Date(anamnese.criadoEm).toLocaleString("pt-BR")}</p>
+            {/* Listagem de Anamneses do Paciente Selecionado */}
+            <div className="anamneses-section">
+              <h2>Anamneses de {selectedPaciente.nome}</h2>
+              {anamneses.length > 0 ? (
+                <div className="anamneses-list">
+                  {anamneses
+                    .sort((a, b) => new Date(b.criadoEm) - new Date(a.criadoEm))
+                    .map((anamnese, index) => (
+                      <div key={index} className="anamnese-card">
+                        <div className="anamnese-content">
+                          <div className="anamnese-row">
+                            <p className="data-field"><FaCalendarDay /> <strong>Data:</strong> {anamnese.data}</p>
+                            <p className="field-item"><FaNotesMedical /> <strong>Histórico Gestacional:</strong> {anamnese.historicoGestacional}</p>
                           </div>
-                          {anamnese.arquivoURL && (
-                            <div className="anexo-field">
-                              <a href={anamnese.arquivoURL} target="_blank" rel="noopener noreferrer">
-                                <FaFileImage /> Visualizar Anexo
-                              </a>
-                            </div>
-                          )}
+                          <div className="anamnese-row">
+                            <p className="field-item"><FaNotesMedical /> <strong>Desenvolvimento Motor:</strong> {anamnese.desenvolvimentoMotor}</p>
+                            <p className="field-item"><FaNotesMedical /> <strong>Desenvolvimento da Linguagem:</strong> {anamnese.desenvolvimentoLinguagem}</p>
+                          </div>
+                          <div className="anamnese-row">
+                            <p className="field-item"><FaNotesMedical /> <strong>Comportamento Social:</strong> {anamnese.comportamentoSocial}</p>
+                            <p className="field-item"><FaHeartbeat /> <strong>Histórico Médico:</strong> {anamnese.historicoMedico}</p>
+                          </div>
+                          <div className="anamnese-row">
+                            <p className="field-item"><FaUsers /> <strong>Histórico Familiar:</strong> {anamnese.historicoFamiliar}</p>
+                            <p className="field-item"><FaSchool /> <strong>Escolaridade:</strong> {anamnese.escolaridade}</p>
+                          </div>
+                          <div className="anamnese-row">
+                            <p className="field-item"><FaNotesMedical /> <strong>Observações:</strong> {anamnese.observacoes || "Nenhuma observação"}</p>
+                          </div>
+                          <p className="created-field"><FaCalendarDay /> <strong>Criado em:</strong> {new Date(anamnese.criadoEm).toLocaleString("pt-BR")}</p>
                         </div>
-                      ))}
-                  </div>
-                ) : (
-                  <p>Nenhuma anamnese registrada para este paciente.</p>
-                )}
-              </div>
-            </>
-          )}
-        </div>
-      </main>
+                        {anamnese.arquivoURL && (
+                          <div className="anexo-field">
+                            <a href={anamnese.arquivoURL} target="_blank" rel="noopener noreferrer">
+                              <FaFileImage /> Visualizar Anexo
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                </div>
+              ) : (
+                <p>Nenhuma anamnese registrada para este paciente.</p>
+              )}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 };

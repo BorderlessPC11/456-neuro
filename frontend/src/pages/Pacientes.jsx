@@ -23,8 +23,6 @@ import {
   FaCheck,
   FaUserMd,
 } from "react-icons/fa";
-import Sidebar from "../components/Sidebar";
-import "./Dashboard.css";
 import "./Pacientes.css";
 
 const Pacientes = () => {
@@ -199,37 +197,34 @@ const Pacientes = () => {
   };
 
   return (
-    <div className="dashboard-container">
-      <Sidebar />
+    <div className="pacientes-page">
+      <div className="pacientes-header">
+        <h1>Gerenciar Pacientes</h1>
+        <p>Adicione ou visualize os pacientes da clínica.</p>
+      </div>
 
-      <main className="main-content">
-        <div className="pacientes-header">
-          <h1>Gerenciar Pacientes</h1>
-          <p>Adicione ou visualize os pacientes da clínica.</p>
+      <div className="pacientes-section">
+        <div className="form-toggle">
+          <button onClick={toggleForm} className="toggle-form-btn">
+            {isFormExpanded ? <FaMinus /> : <FaPlus />}
+            {isFormExpanded ? "Fechar Cadastro" : "Adicionar Novo Paciente"}
+          </button>
         </div>
-
-        <div className="pacientes-section">
-          <div className="form-toggle">
-            <button onClick={toggleForm} className="toggle-form-btn">
-              {isFormExpanded ? <FaMinus /> : <FaPlus />}
-              {isFormExpanded ? "Fechar Cadastro" : "Adicionar Novo Paciente"}
-            </button>
-          </div>
-          {isFormExpanded && (
-            <div className={`form-container ${isFormExpanded ? "expanded" : "collapsed"}`}>
-              <h2>Adicionar Novo Paciente</h2>
-              <form className="form-paciente" onSubmit={handleSubmit}>
-                <div className="form-group">
-                  <label htmlFor="nome">Nome Completo</label>
-                  <input
-                    id="nome"
-                    name="nome"
-                    value={form.nome}
-                    onChange={handleChange}
-                    placeholder="Digite o nome completo"
-                    required
-                  />
-                </div>
+        {isFormExpanded && (
+          <div className={`form-container ${isFormExpanded ? "expanded" : "collapsed"}`}>
+            <h2>Adicionar Novo Paciente</h2>
+            <form className="form-paciente" onSubmit={handleSubmit}>
+              <div className="form-group">
+                <label htmlFor="nome">Nome Completo</label>
+                <input
+                  id="nome"
+                  name="nome"
+                  value={form.nome}
+                  onChange={handleChange}
+                  placeholder="Digite o nome completo"
+                  required
+                />
+              </div>
                 <div className="form-group">
                   <label htmlFor="email">Email</label>
                   <input
@@ -622,7 +617,6 @@ const Pacientes = () => {
             </div>
           </div>
         )}
-      </main>
     </div>
   );
 };

@@ -1,0 +1,39 @@
+:root {
+  --color-bg: #f4f6f8;
+  --color-frame: #ffffff;
+  --color-text: #0f172a;
+  --color-muted: #667085;
+  --color-border: rgba(15, 23, 42, 0.08);
+
+  --color-rail: #0b0b10;
+  --color-rail-surface: rgba(255, 255, 255, 0.08);
+  --color-rail-surface-2: rgba(255, 255, 255, 0.14);
+
+  /* Monochrome UI: keep primary neutral */
+  --color-primary: #0b0b10;
+  --color-accent: #0b0b10;
+  --color-success: #0b0b10;
+
+  /* Semantic colors (allowed exceptions) */
+  --color-danger: #b42318;
+  --color-danger-bg: #ffedea;
+
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+
+  --shadow-sm: 0 6px 18px rgba(2, 6, 23, 0.06);
+  --shadow-md: 0 18px 50px rgba(2, 6, 23, 0.12);
+
+  --space-1: 8px;
+  --space-2: 12px;
+  --space-3: 16px;
+  --space-4: 24px;
+  --space-5: 32px;
+
+  --rail-width: 76px;
+  --topbar-height: 56px;
+
+  --focus-ring: 0 0 0 4px rgba(2, 6, 23, 0.18);
+}
+

@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, orderBy } from "firebase/firestore";
 import { db } from "../firebase";
 import { FaPlus, FaTrash, FaEdit, FaCheck, FaTimes, FaSearch, FaClipboardList, FaSave, FaBan } from "react-icons/fa";
-import Sidebar from "../components/Sidebar";
 import "./Despesas.css";
 
 const categorias = [
@@ -152,9 +151,7 @@ const Despesas = () => {
   }, 0);
 
   return (
-    <div className="dashboard-container">
-      <Sidebar />
-      <main className="main-content despesas-main">
+    <div className="despesas-page">
         <div className="despesas-header">
           <h1><FaClipboardList /> Despesas</h1>
           <p>Gerencie contas a pagar e despesas gerais da clínica.</p>
@@ -369,7 +366,6 @@ const Despesas = () => {
             {totalGeral.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
           </div>
         )}
-      </main>
     </div>
   );
 };

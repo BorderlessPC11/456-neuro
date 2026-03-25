@@ -7,7 +7,6 @@ import { useAuth } from "../context/AuthContext";
 import {
   FaPlus, FaTimes, FaFileImage, FaFile, FaUpload, FaSave, FaUsers, FaFolderOpen
 } from "react-icons/fa";
-import Sidebar from "../components/Sidebar";
 import "./DocumentosPaciente.css";
 
 const DocumentosPaciente = () => {
@@ -124,10 +123,7 @@ const DocumentosPaciente = () => {
   }
 
   return (
-    <div className="dashboard-container">
-      <Sidebar />
-
-      <main className="main-content">
+    <div className="documentos-paciente-page">
         <div className="documentos-paciente-container">
           <div className="documentos-paciente-header">
             <h1><FaFolderOpen /> Documentos dos Pacientes</h1>
@@ -255,7 +251,6 @@ const DocumentosPaciente = () => {
             </>
           )}
         </div>
-      </main>
     </div>
   );
 };

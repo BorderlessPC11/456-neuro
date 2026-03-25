@@ -26,8 +26,6 @@ import {
   FaSearch,
   FaTimes,
 } from "react-icons/fa";
-import Sidebar from "../components/Sidebar";
-import "./Dashboard.css";
 import "./Profissionais.css";
 import logo from "../assets/logo.png";
 import { useAuth } from "../context/AuthContext";
@@ -176,11 +174,7 @@ const Profissionais = () => {
   );
 
   return (
-    <div className="dashboard-container">
-      <Sidebar />
-
-      {/* Conteúdo */}
-      <main className="main-content">
+    <div className="profissionais-page">
         <h1>Profissionais da Clínica</h1>
 
         <form className="form-profissional" onSubmit={handleSubmit}>
@@ -302,7 +296,6 @@ const Profissionais = () => {
         >
           <FaArrowUp />
         </button>
-      </main>
     </div>
   );
 };

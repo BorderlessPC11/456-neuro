@@ -3,15 +3,8 @@ import "./Dashboard.css";
 import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
-import {
-  FaUsers,
-  FaCalendarAlt,
-  FaFileAlt,
-  FaBell,
-  FaUserPlus,
-} from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-import Sidebar from "../components/Sidebar";
+import { FaUsers, FaCalendarAlt, FaFileAlt, FaBell, FaUserPlus } from "react-icons/fa";
 
 /**
  * Util: formata a data atual em pt-BR (ex: "sexta-feira, 16 de maio de 2025")
@@ -24,7 +17,6 @@ function useHojeFormatado() {
     const dia = agora.toLocaleDateString("pt-BR", { day: "2-digit" });
     const mes = agora.toLocaleDateString("pt-BR", { month: "long" });
     const ano = agora.getFullYear();
-    // Capitaliza só a primeira letra do dia/mês (mantendo padrão pt-BR)
     const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
     setTexto(`${cap(diaSemana)}, ${dia} de ${cap(mes)} de ${ano}`);
   }, []);
@@ -115,7 +107,7 @@ const Dashboard = () => {
         const teSnap = await getDocs(teQuery);
         setTotalTerapiasSemana(teSnap.size);
 
-        // 5) Notificações MOCK
+        // 5) Notificações (mantém mock como antes)
         setNotificacoes([
           { id: 1, mensagem: "Novo paciente cadastrado: João Silva", data: "Hoje, 08:30" },
           { id: 2, mensagem: "Agendamento cancelado: Maria Oliveira", data: "Ontem, 14:00" },
@@ -135,111 +127,100 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="dashboard-container">
-      <Sidebar />
+    <div className="dashboard-page">
+      <div className="dashboard-header">
+        <h1>Bem-vindo(a), {nomeUsuario || "!"}</h1>
+        <p>{dataCabecalho}</p>
+      </div>
 
-      <main className="main-content">
-        <div className="dashboard-header">
-          <h1>Bem-vindo(a), {nomeUsuario || "!"}</h1>
-          <p>{dataCabecalho}</p>
+      <div className="summary-cards">
+        <div className="summary-card">
+          <FaUsers className="card-icon" aria-hidden="true" />
+          <h3>{loading ? "—" : totalPacientes}</h3>
+          <p>Total de Pacientes</p>
         </div>
-
-        <div className="summary-cards">
-          <div className="summary-card">
-            <FaUsers className="card-icon" />
-            <h3>{loading ? "—" : totalPacientes}</h3>
-            <p>Total de Pacientes</p>
-          </div>
-          <div className="summary-card">
-            <FaCalendarAlt className="card-icon" />
-            <h3>{loading ? "—" : agendamentosHoje.length}</h3>
-            <p>Agendamentos Hoje</p>
-          </div>
-          <div className="summary-card">
-            <FaFileAlt className="card-icon" />
-            <h3>{loading ? "—" : totalTerapiasSemana}</h3>
-            <p>Terapias na Semana</p>
-          </div>
+        <div className="summary-card">
+          <FaCalendarAlt className="card-icon" aria-hidden="true" />
+          <h3>{loading ? "—" : agendamentosHoje.length}</h3>
+          <p>Agendamentos Hoje</p>
         </div>
+        <div className="summary-card">
+          <FaFileAlt className="card-icon" aria-hidden="true" />
+          <h3>{loading ? "—" : totalTerapiasSemana}</h3>
+          <p>Terapias na Semana</p>
+        </div>
+      </div>
 
-        <div className="dashboard-sections">
-          <div className="section agendamentos-section">
-            <h2>Agendamentos de Hoje</h2>
-            {loading ? (
-              <p>Carregando...</p>
-            ) : agendamentosHoje.length > 0 ? (
-              <ul className="agendamentos-list">
-                {agendamentosHoje.map((agendamento) => {
-                  const nomePac =
-                    pacientesMap[agendamento.patientId] ||
-                    agendamento.pacienteNome ||
-                    "Paciente";
-                  const hora = agendamento.time || "--:--";
-                  const tipo = agendamento.therapyName || "Terapia";
-                  return (
-                    <li key={agendamento.id} className="agendamento-item">
-                      <span>{hora}</span> — {nomePac} ({tipo})
-                    </li>
-                  );
-                })}
-              </ul>
-            ) : (
-              <p>Nenhum agendamento para hoje.</p>
-            )}
-            <button
-              className="ver-todos-btn"
-              onClick={() => navigate("/agenda-geral")}
-            >
-              Ver Todos os Agendamentos
-            </button>
-          </div>
-
-          <div className="section notificacoes-section">
-            <h2>Notificações Recentes</h2>
-            {loading ? (
-              <p>Carregando...</p>
-            ) : notificacoes.length > 0 ? (
-              <ul className="notificacoes-list">
-                {notificacoes.map((notificacao) => (
-                  <li key={notificacao.id} className="notificacao-item">
-                    <FaBell className="notificacao-icon" />
-                    <div>
-                      <p>{notificacao.mensagem}</p>
-                      <span className="notificacao-data">
-                        {notificacao.data}
-                      </span>
-                    </div>
+      <div className="dashboard-sections">
+        <div className="section agendamentos-section">
+          <h2>Agendamentos de Hoje</h2>
+          {loading ? (
+            <p>Carregando...</p>
+          ) : agendamentosHoje.length > 0 ? (
+            <ul className="agendamentos-list">
+              {agendamentosHoje.map((agendamento) => {
+                const nomePac =
+                  pacientesMap[agendamento.patientId] ||
+                  agendamento.pacienteNome ||
+                  "Paciente";
+                const hora = agendamento.time || "--:--";
+                const tipo = agendamento.therapyName || "Terapia";
+                return (
+                  <li key={agendamento.id} className="agendamento-item">
+                    <span>{hora}</span> — {nomePac} ({tipo})
                   </li>
-                ))}
-              </ul>
-            ) : (
-              <p>Nenhuma notificação recente.</p>
-            )}
-          </div>
+                );
+              })}
+            </ul>
+          ) : (
+            <p>Nenhum agendamento para hoje.</p>
+          )}
+          <button className="ver-todos-btn" type="button" onClick={() => navigate("/agenda-geral")}>
+            Ver Todos os Agendamentos
+          </button>
         </div>
 
-        <div className="quick-actions">
-          <h2>Ações Rápidas</h2>
-          <div className="actions-grid">
-            {/* Mantido para não quebrar rotas */}
-            <div className="action-card" onClick={() => handleQuickAction("/pacientes")}>
-              <FaUserPlus className="action-icon" />
-              <span>Adicionar Paciente</span>
-            </div>
+        <div className="section notificacoes-section">
+          <h2>Notificações Recentes</h2>
+          {loading ? (
+            <p>Carregando...</p>
+          ) : notificacoes.length > 0 ? (
+            <ul className="notificacoes-list">
+              {notificacoes.map((notificacao) => (
+                <li key={notificacao.id} className="notificacao-item">
+                  <FaBell className="notificacao-icon" aria-hidden="true" />
+                  <div>
+                    <p>{notificacao.mensagem}</p>
+                    <span className="notificacao-data">{notificacao.data}</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p>Nenhuma notificação recente.</p>
+          )}
+        </div>
+      </div>
 
-            <div className="action-card" onClick={() => handleQuickAction("/adicionar-agendamento")}>
-              <FaCalendarAlt className="action-icon" />
-              <span>Criar Agendamento</span>
-            </div>
+      <div className="quick-actions">
+        <h2>Ações Rápidas</h2>
+        <div className="actions-grid">
+          <div className="action-card" role="button" tabIndex={0} onClick={() => handleQuickAction("/pacientes")}>
+            <FaUserPlus className="action-icon" aria-hidden="true" />
+            <span>Adicionar Paciente</span>
+          </div>
 
-            {/* ALTERADO CONFORME SUA SOLICITAÇÃO */}
-            <div className="action-card" onClick={() => handleQuickAction("/evolucao")}>
-              <FaFileAlt className="action-icon" />
-              <span>+ Evolução Diária</span>
-            </div>
+          <div className="action-card" role="button" tabIndex={0} onClick={() => handleQuickAction("/adicionar-agendamento")}>
+            <FaCalendarAlt className="action-icon" aria-hidden="true" />
+            <span>Criar Agendamento</span>
+          </div>
+
+          <div className="action-card" role="button" tabIndex={0} onClick={() => handleQuickAction("/evolucao")}>
+            <FaFileAlt className="action-icon" aria-hidden="true" />
+            <span>+ Evolução Diária</span>
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 };

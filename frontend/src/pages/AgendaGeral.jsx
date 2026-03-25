@@ -4,7 +4,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import { addDoc, collection, deleteDoc, doc, getDocs, orderBy, query, updateDoc, where, writeBatch } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
-import Sidebar from "../components/Sidebar";
 import "./AgendaGeral.css";
 import { useNavigate } from "react-router-dom";
 
@@ -640,38 +639,30 @@ const AgendaGeral = () => {
   );
 
   if (authLoading || loadingAgendamentos) return (
-    <div className="dashboard-container">
-      <Sidebar />
-      <main className="main-content">
-        <div className="agenda-geral-container">
-          <div className="loading-container">
-            <FaSpinner className="loading-spinner" />
-            <p>Carregando...</p>
-          </div>
+    <div className="agenda-geral-page">
+      <div className="agenda-geral-container">
+        <div className="loading-container">
+          <FaSpinner className="loading-spinner" />
+          <p>Carregando...</p>
         </div>
-      </main>
+      </div>
     </div>
   );
   if (errorAgendamentos) return (
-    <div className="dashboard-container">
-      <Sidebar />
-      <main className="main-content">
-        <div className="agenda-geral-container">
-          <div className="error-container">
-            <FaExclamationTriangle className="error-icon" />
-            <p>{errorAgendamentos}</p>
-            <button onClick={() => window.location.reload()} className="retry-button">Tentar</button>
-          </div>
+    <div className="agenda-geral-page">
+      <div className="agenda-geral-container">
+        <div className="error-container">
+          <FaExclamationTriangle className="error-icon" />
+          <p>{errorAgendamentos}</p>
+          <button onClick={() => window.location.reload()} className="retry-button">Tentar</button>
         </div>
-      </main>
+      </div>
     </div>
   );
 
   return (
-    <div className="dashboard-container">
-      <Sidebar />
-      <main className="main-content">
-        <div className="agenda-geral-container">
+    <div className="agenda-geral-page">
+      <div className="agenda-geral-container">
           <div className="agenda-header">
             <h1>📅 Agenda</h1>
             <button className="add-agendamento-btn" onClick={() => navigate("/adicionar-agendamento")}>
@@ -849,8 +840,7 @@ const AgendaGeral = () => {
               setDeleteOptionsModal({ isOpen: false, agendamento: null });
             }}
           />
-        </div>
-      </main>
+      </div>
     </div>
   );
 };
