@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import "./Dashboard.css";
-import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, getDocs, orderBy, limit } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -45,6 +45,16 @@ const Dashboard = () => {
     patientId: raw.patientId || raw.pacienteId || "",
     time: raw.time || raw.hora || "--:--",
     therapyName: raw.therapyName || raw.tipo || "Terapia"
+  });
+
+  const normalizeNotification = (raw, id) => ({
+    id,
+    mensagem: raw.mensagem || raw.titulo || raw.descricao || "Notificação",
+    data: raw.createdAt?.toDate?.()
+      ? raw.createdAt.toDate().toLocaleString("pt-BR")
+      : raw.criadoEm?.toDate?.()
+        ? raw.criadoEm.toDate().toLocaleString("pt-BR")
+        : "Recente",
   });
 
   useEffect(() => {
@@ -107,11 +117,15 @@ const Dashboard = () => {
         const teSnap = await getDocs(teQuery);
         setTotalTerapiasSemana(teSnap.size);
 
-        // 5) Notificações (mantém mock como antes)
-        setNotificacoes([
-          { id: 1, mensagem: "Novo paciente cadastrado: João Silva", data: "Hoje, 08:30" },
-          { id: 2, mensagem: "Agendamento cancelado: Maria Oliveira", data: "Ontem, 14:00" },
-        ]);
+        // 5) Notificações reais
+        const notifQuery = query(
+          collection(db, "notificacoes"),
+          where("clinicaId", "==", clinicaId),
+          orderBy("criadoEm", "desc"),
+          limit(6)
+        );
+        const notifSnap = await getDocs(notifQuery);
+        setNotificacoes(notifSnap.docs.map((d) => normalizeNotification(d.data(), d.id)));
       } catch (err) {
         console.error("Erro ao carregar dashboard:", err);
       } finally {

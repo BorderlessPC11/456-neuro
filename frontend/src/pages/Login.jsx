@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
@@ -6,6 +6,7 @@ import { auth, db } from "../firebase";
 import { useAuth } from "../context/AuthContext"; 
 import logo from "../assets/logo.png"; // 🛑 Assegure-se que este caminho está correto!
 import './Login.css'; 
+import { isGuardianRole, normalizeRole } from "../auth/roles";
 
 function Login() {
   const [email, setEmail] = useState("");
@@ -26,9 +27,9 @@ function Login() {
       let role = "";
       if (uid) {
         const snap = await getDoc(doc(db, "usuarios", uid));
-        if (snap.exists()) role = snap.data()?.role || "";
+        if (snap.exists()) role = normalizeRole(snap.data()?.role || "");
       }
-      if (role === "guardian" || role === "responsavel") navigate("/guardian");
+      if (isGuardianRole(role)) navigate("/guardian");
       else navigate("/dashboard");
     } catch (err) {
       let errorMessage = "Erro ao fazer login. Verifique suas credenciais.";
@@ -41,11 +42,13 @@ function Login() {
     }
   };
 
-  if (!authLoading && currentUserData) {
-    const r = currentUserData.role;
-    navigate(r === "guardian" || r === "responsavel" ? "/guardian" : "/dashboard");
-    return null;
-  }
+  useEffect(() => {
+    if (authLoading || !currentUserData) return;
+    const r = normalizeRole(currentUserData.role);
+    navigate(isGuardianRole(r) ? "/guardian" : "/dashboard", { replace: true });
+  }, [authLoading, currentUserData, navigate]);
+
+  if (!authLoading && currentUserData) return null;
 
   if (authLoading) {
       return (

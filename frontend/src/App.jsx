@@ -34,6 +34,10 @@ import GuardianProgressHub from "./pages/guardian/GuardianProgressHub";
 import GuardianProgramProgress from "./pages/guardian/GuardianProgramProgress";
 import GuardianAppointments from "./pages/guardian/GuardianAppointments";
 import GuardianMessages from "./pages/guardian/GuardianMessages";
+import InviteRegister from "./pages/InviteRegister";
+import MigrationTools from "./pages/MigrationTools";
+import RoleRoute from "./auth/RoleRoute";
+import { isAdminLike, isManagerLike } from "./auth/roles";
 
 import "./App.css";
 
@@ -44,6 +48,7 @@ function App() {
         <Route path="/" element={<Login />} />
         <Route path="/cadastro" element={<Cadastro />} />
         <Route path="/guardian/register/:inviteId" element={<GuardianRegister />} />
+        <Route path="/invite/register/:inviteId" element={<InviteRegister />} />
         <Route element={<GuardianShell />}>
           <Route path="/guardian" element={<GuardianDashboard />} />
           <Route path="/guardian/progress" element={<GuardianProgressHub />} />
@@ -70,17 +75,74 @@ function App() {
           <Route path="/notificacoes" element={<Notificacoes />} />
           <Route path="/comunicacao" element={<Comunicacao />} />
           <Route path="/gerar-relatorio" element={<GerarRelatorio />} />
-          <Route path="/profissionais" element={<Profissionais />} />
-          <Route path="/administracao" element={<Administracao />} />
+          <Route
+            path="/profissionais"
+            element={
+              <RoleRoute allowWhen={(role) => isManagerLike(role)}>
+                <Profissionais />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/administracao"
+            element={
+              <RoleRoute allowWhen={(role) => isManagerLike(role)}>
+                <Administracao />
+              </RoleRoute>
+            }
+          />
           {/* Rotas para Compras a Fazer */}
-          <Route path="/compras-a-fazer" element={<ComprasAFazer />} />
-          <Route path="/compras" element={<ComprasAFazer />} />
+          <Route
+            path="/compras-a-fazer"
+            element={
+              <RoleRoute allowWhen={(role) => isAdminLike(role)}>
+                <ComprasAFazer />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/compras"
+            element={
+              <RoleRoute allowWhen={(role) => isAdminLike(role)}>
+                <ComprasAFazer />
+              </RoleRoute>
+            }
+          />
           {/* Rota para Despesas */}
-          <Route path="/despesas" element={<Despesas />} />
+          <Route
+            path="/despesas"
+            element={
+              <RoleRoute allowWhen={(role) => isAdminLike(role)}>
+                <Despesas />
+              </RoleRoute>
+            }
+          />
           {/* Rota para Tarefas */}
-          <Route path="/tarefas" element={<Tarefas />} />
+          <Route
+            path="/tarefas"
+            element={
+              <RoleRoute allowWhen={(role) => isAdminLike(role)}>
+                <Tarefas />
+              </RoleRoute>
+            }
+          />
           {/* Nova rota para Usuários */}
-          <Route path="/usuarios" element={<Usuarios />} />
+          <Route
+            path="/usuarios"
+            element={
+              <RoleRoute allowWhen={(role) => isManagerLike(role)}>
+                <Usuarios />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/migration-tools"
+            element={
+              <RoleRoute allowWhen={(role) => isAdminLike(role)}>
+                <MigrationTools />
+              </RoleRoute>
+            }
+          />
         </Route>
       </Routes>
     </Router>

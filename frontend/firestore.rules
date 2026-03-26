@@ -45,6 +45,10 @@ service cloud.firestore {
       return userRole() in ["admin", "admin_master", "master"];
     }
 
+    function isManagerRole() {
+      return userRole() in ["admin", "admin_master", "master", "gerente"];
+    }
+
     function guardianAccessDocId(patientId, guardianUid) {
       return patientId + "_" + guardianUid;
     }
@@ -133,6 +137,30 @@ service cloud.firestore {
       );
 
       allow delete: if false;
+    }
+
+    match /user_invites/{inviteId} {
+      allow read: if isAuthenticated()
+        && (
+          (resource.data.email is string && request.auth.token.email == resource.data.email)
+          || canReadClinicResource(resource.data)
+        );
+
+      allow create: if isManagerRole()
+        && canWriteClinicResource(request.resource.data)
+        && request.resource.data.email is string
+        && request.resource.data.role is string
+        && request.resource.data.status == "pending";
+
+      allow update: if isAuthenticated()
+        && (
+          (
+            resource.data.email is string
+            && request.auth.token.email == resource.data.email
+            && request.resource.data.status == "accepted"
+          )
+          || (isManagerRole() && canReadClinicResource(resource.data) && canWriteClinicResource(request.resource.data))
+        );
     }
 
     match /clinicas/{clinicaId} {

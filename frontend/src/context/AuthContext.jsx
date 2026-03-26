@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { auth, db } from '../firebase';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { doc, getDoc } from 'firebase/firestore';
+import { isGuardianRole, isStaffRole, normalizeRole } from "../auth/roles";
 
 const AuthContext = createContext();
 
@@ -18,15 +19,18 @@ export const AuthProvider = ({ children }) => {
           const userSnap = await getDoc(userRef);
           if (userSnap.exists()) {
             const userData = userSnap.data();
-            setCurrentUserData(userData);
+            const role = normalizeRole(userData?.role);
+            setCurrentUserData({ ...userData, role });
             localStorage.setItem("uid", user.uid);
             localStorage.setItem("clinicaId", userData?.clinicaId || "");
             localStorage.setItem("nomeUsuario", userData?.nome || "");
+            localStorage.setItem("role", role || "");
           } else {
             setCurrentUserData(null);
             localStorage.removeItem("uid");
             localStorage.removeItem("clinicaId");
             localStorage.removeItem("nomeUsuario");
+            localStorage.removeItem("role");
           }
         } catch (err) {
           console.error("Erro ao buscar dados do usuário no Firestore:", err);
@@ -34,12 +38,14 @@ export const AuthProvider = ({ children }) => {
           localStorage.removeItem("uid");
           localStorage.removeItem("clinicaId");
           localStorage.removeItem("nomeUsuario");
+          localStorage.removeItem("role");
         }
       } else {
         setCurrentUserData(null);
         localStorage.removeItem("uid");
         localStorage.removeItem("clinicaId");
         localStorage.removeItem("nomeUsuario");
+        localStorage.removeItem("role");
       }
       setIsAuthLoading(false);
     };
@@ -52,6 +58,12 @@ export const AuthProvider = ({ children }) => {
   const value = {
     user,
     currentUserData,
+    uid: user?.uid || "",
+    clinicaId: currentUserData?.clinicaId || "",
+    role: normalizeRole(currentUserData?.role || ""),
+    isGuardian: isGuardianRole(currentUserData?.role || ""),
+    isStaff: isStaffRole(currentUserData?.role || ""),
+    hasRole: (...roles) => roles.includes(normalizeRole(currentUserData?.role || "")),
     loading: loading || isAuthLoading,
     error,
   };

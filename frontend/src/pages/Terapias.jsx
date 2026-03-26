@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from "react";
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, getDoc } from "firebase/firestore";
-import { db, auth } from "../firebase";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useState, useCallback } from "react";
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where } from "firebase/firestore";
+import { db } from "../firebase";
 import {
   FaHandsHelping,
   FaFileAlt,
@@ -16,11 +15,11 @@ import {
   FaBrain,
 } from "react-icons/fa";
 import "./Terapias.css";
+import { useAuth } from "../context/AuthContext";
+import { canManageTherapists } from "../auth/roles";
 
 const Terapias = () => {
-  const [nomeUsuario, setNomeUsuario] = useState("");
-  const [nomeClinica, setNomeClinica] = useState("");
-  const [role, setRole] = useState("");
+  const { currentUserData, role } = useAuth();
   const [terapias, setTerapias] = useState([]);
   const [form, setForm] = useState({
     nome: "",
@@ -28,49 +27,25 @@ const Terapias = () => {
   });
   const [editId, setEditId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const navigate = useNavigate();
-  const clinicaId = localStorage.getItem("clinicaId");
+  const clinicaId = currentUserData?.clinicaId || "";
 
-  const fetchUserData = async () => {
-    const nome = localStorage.getItem("nomeUsuario");
-    if (nome) setNomeUsuario(nome);
-
-    const uid = localStorage.getItem("uid");
-
-    if (uid) {
-      const userRef = doc(db, "usuarios", uid);
-      const userSnap = await getDoc(userRef);
-      if (userSnap.exists()) {
-        const data = userSnap.data();
-        setRole(data.role || "");
-      }
-    }
-
-    if (clinicaId) {
-      const clinicaRef = doc(db, "clinicas", clinicaId);
-      const clinicaSnap = await getDoc(clinicaRef);
-      if (clinicaSnap.exists()) {
-        setNomeClinica(clinicaSnap.data().nome);
-      }
-    }
-  };
-
-  const fetchTerapias = async () => {
+  const fetchTerapias = useCallback(async () => {
     try {
-      const terapiasRef = collection(db, "terapias");
-      const snap = await getDocs(terapiasRef);
-      const data = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      if (!clinicaId) {
+        setTerapias([]);
+        return;
+      }
+      const snap = await getDocs(query(collection(db, "terapias"), where("clinicaId", "==", clinicaId)));
+      const data = snap.docs.map((item) => ({ id: item.id, ...item.data() }));
       setTerapias(data);
     } catch (error) {
       console.error("Erro ao buscar terapias:", error);
     }
-  };
+  }, [clinicaId]);
 
   useEffect(() => {
-    fetchUserData();
     fetchTerapias();
-    // eslint-disable-next-line
-  }, [role]);
+  }, [fetchTerapias]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -81,13 +56,20 @@ const Terapias = () => {
         await updateDoc(terapiaRef, {
           nome: form.nome,
           descricao: form.descricao,
+          clinicaId,
+          ativo: true,
+          updatedAt: new Date().toISOString(),
         });
       } else {
         // Adicionar nova terapia
+        const createdAt = new Date().toISOString();
         await addDoc(collection(db, "terapias"), {
           nome: form.nome,
           descricao: form.descricao,
-          criadoEm: new Date().toISOString(),
+          clinicaId,
+          ativo: true,
+          createdAt,
+          criadoEm: createdAt,
         });
       }
 
@@ -146,6 +128,15 @@ const Terapias = () => {
 
   return (
     <div className="terapias-page">
+        {!canManageTherapists(role) && (
+          <div className="terapias-container">
+            <div className="terapias-header">
+              <h1>Registro de Terapias</h1>
+              <p>Apenas gerentes e administradores podem gerenciar terapias.</p>
+            </div>
+          </div>
+        )}
+        {canManageTherapists(role) && (
         <div className="terapias-container">
           <div className="terapias-header">
             <h1>Registro de Terapias</h1>
@@ -275,6 +266,7 @@ const Terapias = () => {
             )}
           </div>
         </div>
+        )}
     </div>
   );
 };

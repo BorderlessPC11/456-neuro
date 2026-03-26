@@ -1,17 +1,16 @@
-import React, { useEffect, useState } from "react";
-import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, where } from "firebase/firestore";
-import { db } from "../firebase";
-import { FaPlus, FaTrash, FaEdit, FaSearch, FaClipboardList, FaSave, FaBan, FaWhatsapp } from "react-icons/fa";
+import React, { useCallback, useEffect, useState } from "react";
+import { FaPlus, FaTrash, FaEdit, FaSearch, FaClipboardList, FaSave, FaBan, FaWhatsapp, FaTimes, FaCheck, FaLink } from "react-icons/fa";
 import "./Usuarios.css";
+import { useAuth } from "../context/AuthContext";
+import { canManageUsers, STAFF_ASSIGNABLE_ROLES } from "../auth/roles";
+import { createUserInvite } from "../features/users/invitesApi";
+import { createStaffProfile, deleteStaffProfile, listUsersByClinic, updateStaffProfile } from "../features/users/usersApi";
 
-const roles = [
-  { value: "recepcionista", label: "Recepcionista" },
-  { value: "gerente", label: "Gerente" },
-  { value: "guardian", label: "Responsável / família (área do guardião)" },
-  { value: "responsavel", label: "Responsável (legado — use guardião)" },
-];
+const roles = STAFF_ASSIGNABLE_ROLES;
 
 const Usuarios = () => {
+  const { currentUserData, role } = useAuth();
+  const clinicaId = currentUserData?.clinicaId || "";
   const [usuarios, setUsuarios] = useState([]);
   const [form, setForm] = useState({
     nome: "",
@@ -27,22 +26,22 @@ const Usuarios = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
 
-  useEffect(() => {
-    buscarUsuarios();
-  }, []);
-
-  const buscarUsuarios = async () => {
+  const buscarUsuarios = useCallback(async () => {
+    if (!clinicaId) return;
     setLoading(true);
     try {
-      const q = query(collection(db, "usuarios"), where("role", "!=", "terapeuta"));
-      const snap = await getDocs(q);
-      const usuariosFiltrados = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      const data = await listUsersByClinic(clinicaId);
+      const usuariosFiltrados = data.filter((u) => u.uid !== currentUserData?.uid);
       setUsuarios(usuariosFiltrados);
     } catch (err) {
       alert("Erro ao buscar usuários: " + err.message);
     }
     setLoading(false);
-  };
+  }, [clinicaId, currentUserData?.uid]);
+
+  useEffect(() => {
+    if (clinicaId) buscarUsuarios();
+  }, [clinicaId, buscarUsuarios]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -52,17 +51,11 @@ const Usuarios = () => {
     }
     try {
       if (editId) {
-        await updateDoc(doc(db, "usuarios", editId), { ...form });
+        await updateStaffProfile(editId, { ...form });
         setModalMessage("Usuário atualizado com sucesso!");
         setEditId(null);
       } else {
-        const clinicaId = localStorage.getItem("clinicaId") || "";
-        await addDoc(collection(db, "usuarios"), {
-          ...form,
-          clinicaId,
-          senha: form.cpf, // Senha padrão como CPF
-          criadoEm: new Date().toISOString(),
-        });
+        await createStaffProfile({ ...form, clinicaId });
         setModalMessage("Usuário adicionado com sucesso!");
       }
       setForm({ nome: "", email: "", cpf: "", telefone: "", whatsapp: "", role: "recepcionista" });
@@ -81,7 +74,7 @@ const Usuarios = () => {
     }
     if (!window.confirm("Excluir este usuário?")) return;
     try {
-      await deleteDoc(doc(db, "usuarios", id));
+      await deleteStaffProfile(id);
       buscarUsuarios();
       setModalMessage("Usuário excluído com sucesso!");
       setIsModalOpen(true);
@@ -112,12 +105,44 @@ const Usuarios = () => {
     setEditId(null);
   };
 
+  const handleCreateInvite = async () => {
+    if (!form.email || !form.role) {
+      alert("Preencha ao menos e-mail e role para gerar convite.");
+      return;
+    }
+    try {
+      const ref = await createUserInvite({
+        email: form.email,
+        role: form.role,
+        clinicaId,
+        createdByUid: currentUserData?.uid || "",
+      });
+      const inviteLink = `${window.location.origin}/invite/register/${ref.id}`;
+      await navigator.clipboard.writeText(inviteLink);
+      setModalMessage(`Convite criado e copiado: ${inviteLink}`);
+      setIsModalOpen(true);
+    } catch (err) {
+      alert("Erro ao criar convite: " + err.message);
+    }
+  };
+
   const usuariosFiltrados = usuarios.filter(
     (u) =>
       u.nome?.toLowerCase().includes(busca.toLowerCase()) ||
       u.email?.toLowerCase().includes(busca.toLowerCase()) ||
       u.cpf?.toLowerCase().includes(busca.toLowerCase())
   );
+
+  if (!canManageUsers(role)) {
+    return (
+      <div className="usuarios-page">
+        <div className="usuarios-header">
+          <h1><FaClipboardList /> Usuários</h1>
+          <p>Apenas gerentes e administradores podem acessar esta página.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="usuarios-page">
@@ -228,6 +253,11 @@ const Usuarios = () => {
             {editId && (
               <button className="cancel-btn" type="button" onClick={limparForm}>
                 <FaBan /> Cancelar
+              </button>
+            )}
+            {!editId && (
+              <button className="cancel-btn" type="button" onClick={handleCreateInvite}>
+                <FaLink /> Criar convite de acesso
               </button>
             )}
           </div>

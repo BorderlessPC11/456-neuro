@@ -32,23 +32,27 @@ const Cadastro = () => {
       const clinicaDoc = doc(db, "clinicas", clinicaId);
       const clinicaSnap = await getDoc(clinicaDoc);
       if (!clinicaSnap.exists()) {
+        const createdAt = new Date();
         await setDoc(clinicaDoc, {
           nome: nomeClinica,
           emailPrincipal: email,
           clinicaId,
-          criadaEm: new Date()
+          createdAt,
+          criadaEm: createdAt,
         });
       }
 
       // 4. Cria usuário dentro da clínica
       const userClinicaRef = doc(db, `clinicas/${clinicaId}/usuarios`, uid);
+      const createdAt = new Date();
       await setDoc(userClinicaRef, {
         nome,
         email,
         role: "admin",
         clinicaId,
         uid,
-        criadoEm: new Date()
+        createdAt,
+        criadoEm: createdAt
       });
 
       // 5. Cria usuário global
@@ -60,7 +64,8 @@ const Cadastro = () => {
         clinicaId,
         uid,
         nomeClinica,
-        criadoEm: new Date()
+        createdAt,
+        criadoEm: createdAt
       });
 
       setMensagem("✅ Cadastro realizado com sucesso! Agora você pode fazer login.");

@@ -4,9 +4,10 @@ import { useAuth } from "../context/AuthContext";
 import IconRail from "../components/IconRail";
 import TopBar from "../components/TopBar";
 import "./AppShell.css";
+import { isGuardianRole } from "../auth/roles";
 
 const AppShellLayout = () => {
-  const { currentUserData, loading } = useAuth();
+  const { currentUserData, loading, role } = useAuth();
   const navigate = useNavigate();
 
   const [isNavOpen, setIsNavOpen] = useState(false);
@@ -17,9 +18,8 @@ const AppShellLayout = () => {
 
   useEffect(() => {
     if (loading || !currentUserData) return;
-    const r = currentUserData.role;
-    if (r === "guardian" || r === "responsavel") navigate("/guardian", { replace: true });
-  }, [loading, currentUserData, navigate]);
+    if (isGuardianRole(role)) navigate("/guardian", { replace: true });
+  }, [loading, currentUserData, role, navigate]);
 
   if (loading) {
     return (

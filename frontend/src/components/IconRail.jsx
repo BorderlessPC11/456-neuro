@@ -1,34 +1,18 @@
 import React, { useEffect, useMemo, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import {
-  FaHome,
-  FaUsers,
-  FaCalendarAlt,
-  FaComments,
-  FaChartBar,
-  FaCog,
-  FaFileAlt,
-  FaFolderOpen,
-  FaCalendarCheck,
-  FaPlusCircle,
-  FaBell,
-  FaEnvelope,
-  FaListAlt,
-  FaSignOutAlt,
-  FaBrain,
-} from "react-icons/fa";
+import { FaSignOutAlt } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
 import { auth, db } from "../firebase";
 import { doc, getDoc } from "firebase/firestore";
 import logo from "../assets/logo.png";
 import "./IconRail.css";
+import { getNavItemsByRole } from "../navigation/navConfig.jsx";
 
 const IconRail = ({ isDrawerOpen, onDrawerOpenChange }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const { currentUserData } = useAuth();
-  const role = currentUserData?.role || "";
+  const { currentUserData, role } = useAuth();
 
   const [nomeClinica, setNomeClinica] = React.useState("");
   useEffect(() => {
@@ -46,72 +30,7 @@ const IconRail = ({ isDrawerOpen, onDrawerOpenChange }) => {
     cargar();
   }, [currentUserData?.clinicaId]);
 
-  const items = useMemo(() => {
-    if (role === "guardian" || role === "responsavel") {
-      return [
-        { label: "Início", path: "/guardian", icon: <FaHome /> },
-        { label: "Progresso", path: "/guardian/progress", icon: <FaBrain /> },
-        { label: "Consultas", path: "/guardian/appointments", icon: <FaCalendarCheck /> },
-        { label: "Mensagens", path: "/guardian/messages", icon: <FaEnvelope /> },
-      ];
-    }
-
-    const base = [
-      { label: "Dashboard", path: "/dashboard", icon: <FaHome /> },
-      {
-        label: "Pacientes",
-        path: "/pacientes",
-        icon: <FaUsers />,
-      },
-      {
-        label: "Evolução Diária",
-        path: "/evolucao",
-        icon: <FaFileAlt />,
-      },
-      {
-        label: "Anamnese",
-        path: "/anamnese",
-        icon: <FaFileAlt />,
-      },
-      {
-        label: "Documentos",
-        path: "/documentos-paciente",
-        icon: <FaFolderOpen />,
-      },
-      {
-        label: "Relatórios",
-        path: "/gerar-relatorio-paciente",
-        icon: <FaChartBar />,
-      },
-      { label: "PDI", path: "/planejamento", icon: <FaCalendarAlt /> },
-      { label: "Terapias", path: "/terapias", icon: <FaFileAlt /> },
-      { label: "Testes", path: "/testes", icon: <FaListAlt /> },
-      { label: "Agenda", path: "/schedule", icon: <FaCalendarCheck /> },
-      { label: "Agenda (lista)", path: "/schedule/list", icon: <FaListAlt /> },
-      {
-        label: "Adicionar Agendamento",
-        path: "/adicionar-agendamento",
-        icon: <FaPlusCircle />,
-      },
-      { label: "Notificações", path: "/notificacoes", icon: <FaBell /> },
-      { label: "Comunicação", path: "/comunicacao", icon: <FaEnvelope /> },
-      { label: "Gerar Relatório", path: "/gerar-relatorio", icon: <FaChartBar /> },
-    ];
-
-    const adminItems =
-      role === "admin" || role === "admin_master" || role === "master"
-        ? [
-            { label: "Profissionais", path: "/profissionais", icon: <FaUsers /> },
-            { label: "Usuários", path: "/usuarios", icon: <FaUsers /> },
-            { label: "Compras a Fazer", path: "/compras", icon: <FaFileAlt /> },
-            { label: "Despesas", path: "/despesas", icon: <FaFileAlt /> },
-            { label: "Tarefas", path: "/tarefas", icon: <FaFileAlt /> },
-            { label: "Administração", path: "/administracao", icon: <FaCog /> },
-          ]
-        : [];
-
-    return [...base, ...adminItems];
-  }, [role]);
+  const items = useMemo(() => getNavItemsByRole(role), [role]);
 
   const activePath = location.pathname;
 

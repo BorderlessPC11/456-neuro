@@ -1,45 +1,28 @@
-// src/pages/Administracao.jsx
 import React, { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 import "./Administracao.css";
-import { db, auth } from "../firebase";
+import { db } from "../firebase";
 import { doc, getDoc } from "firebase/firestore";
 import {
-  FaUser,
-  FaClinicMedical,
   FaUserFriends,
   FaCalendarAlt,
   FaMoneyBillWave,
   FaUserMd,
-  FaSignOutAlt,
   FaTools,
+  FaUsersCog,
+  FaUserShield,
+  FaDatabase,
 } from "react-icons/fa";
+import { useAuth } from "../context/AuthContext";
+import { canManageUsers, isAdminLike } from "../auth/roles";
 
 const Administracao = () => {
-  const [nomeUsuario, setNomeUsuario] = useState("");
   const [nomeClinica, setNomeClinica] = useState("");
-  const [role, setRole] = useState("");
-  const navigate = useNavigate();
+  const { currentUserData, role } = useAuth();
 
   useEffect(() => {
-    const nome = localStorage.getItem("nomeUsuario");
-    const clinicaId = localStorage.getItem("clinicaId");
-    const uid = localStorage.getItem("uid");
-
-    if (nome) setNomeUsuario(nome);
-
-    const fetchUserData = async () => {
-      if (uid) {
-        const userRef = doc(db, "usuarios", uid);
-        const userSnap = await getDoc(userRef);
-        if (userSnap.exists()) {
-          const data = userSnap.data();
-          setRole(data.role || "");
-        }
-      }
-    };
-
     const fetchClinica = async () => {
+      const clinicaId = currentUserData?.clinicaId;
       if (clinicaId) {
         const clinicaRef = doc(db, "clinicas", clinicaId);
         const clinicaSnap = await getDoc(clinicaRef);
@@ -50,43 +33,71 @@ const Administracao = () => {
       }
     };
 
-    fetchUserData();
     fetchClinica();
-  }, []);
+  }, [currentUserData?.clinicaId]);
 
-  const handleLogout = async () => {
-    await auth.signOut();
-    localStorage.clear();
-    navigate("/");
-  };
+  if (!canManageUsers(role)) {
+    return (
+      <div className="administracao-page">
+        <div className="administracao-header">
+          <h1>Administração</h1>
+          <p>Apenas gerentes e administradores podem acessar esta área.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="administracao-page">
       <div className="administracao-header">
-        <h1>Administração</h1>
-        <p>Gerencie áreas gerais do sistema.</p>
+        <h1>Área de gestão</h1>
+        <p>Gerencie pessoas, permissões e configurações da clínica {nomeClinica ? `(${nomeClinica})` : ""}.</p>
       </div>
 
       <div className="administracao-cards-grid">
+        <Link to="/usuarios" className="administracao-card">
+          <FaUsersCog className="card-icon" />
+          <span>Usuários e convites</span>
+        </Link>
+
+        <Link to="/profissionais" className="administracao-card">
+          <FaUserMd className="card-icon" />
+          <span>Terapeutas</span>
+        </Link>
+
         <Link to="/pacientes" className="administracao-card">
           <FaUserFriends className="card-icon" />
           <span>Pacientes</span>
         </Link>
 
-        <div className="administracao-card" role="button" tabIndex={0}>
+        <Link to="/agenda-geral" className="administracao-card">
           <FaCalendarAlt className="card-icon" />
           <span>Agenda</span>
-        </div>
-
-        <div className="administracao-card" role="button" tabIndex={0}>
-          <FaMoneyBillWave className="card-icon" />
-          <span>Financeiro</span>
-        </div>
-
-        <Link to="/profissionais" className="administracao-card">
-          <FaUserMd className="card-icon" />
-          <span>Profissionais</span>
         </Link>
+
+        {isAdminLike(role) && (
+          <Link to="/despesas" className="administracao-card">
+            <FaMoneyBillWave className="card-icon" />
+            <span>Financeiro</span>
+          </Link>
+        )}
+
+        <div className="administracao-card" role="note" tabIndex={0}>
+          <FaUserShield className="card-icon" />
+          <span>Controle de papéis por função</span>
+        </div>
+
+        <div className="administracao-card" role="note" tabIndex={0}>
+          <FaTools className="card-icon" />
+          <span>Configurações gerais</span>
+        </div>
+
+        {isAdminLike(role) && (
+          <Link to="/migration-tools" className="administracao-card">
+            <FaDatabase className="card-icon" />
+            <span>Migration Tools</span>
+          </Link>
+        )}
       </div>
     </div>
   );

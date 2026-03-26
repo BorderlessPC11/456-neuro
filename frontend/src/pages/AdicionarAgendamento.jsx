@@ -66,6 +66,7 @@ const AdicionarAgendamento = () => {
   const [profissionais, setProfissionais] = useState([]);
   const [terapias, setTerapias] = useState([]);
   const [loadingOptions, setLoadingOptions] = useState(true);
+  const [usingLegacyFallback, setUsingLegacyFallback] = useState(false);
 
   const [selectedPaciente, setSelectedPaciente] = useState("");
   const [selectedProfissional, setSelectedProfissional] = useState("");
@@ -123,8 +124,39 @@ const AdicionarAgendamento = () => {
         if (!active) return;
 
         const pacientesList = pacientesSnapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
-        const profissionaisList = profissionaisSnapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
-        const terapiasList = terapiasSnapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+        let profissionaisList = profissionaisSnapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+        let terapiasList = terapiasSnapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+
+        let fallbackUsed = false;
+        if (profissionaisList.length === 0 || terapiasList.length === 0) {
+          const [allProfissionaisSnap, allTerapiasSnap] = await Promise.all([
+            getDocs(collection(db, "profissionais")),
+            getDocs(collection(db, "terapias")),
+          ]);
+          const allProfissionais = allProfissionaisSnap.docs.map((item) => ({ id: item.id, ...item.data() }));
+          const allTerapias = allTerapiasSnap.docs.map((item) => ({ id: item.id, ...item.data() }));
+
+          const isLegacySameClinic = (row) =>
+            !row?.clinicaId && (
+              row?.nomeClinica === currentUserData?.nomeClinica ||
+              row?.clinicName === currentUserData?.nomeClinica
+            );
+
+          if (profissionaisList.length === 0) {
+            const legacyProf = allProfissionais.filter(isLegacySameClinic);
+            if (legacyProf.length > 0) {
+              profissionaisList = legacyProf.map((item) => ({ ...item, __legacyNoClinic: true }));
+              fallbackUsed = true;
+            }
+          }
+          if (terapiasList.length === 0) {
+            const legacyTer = allTerapias.filter(isLegacySameClinic);
+            if (legacyTer.length > 0) {
+              terapiasList = legacyTer.map((item) => ({ ...item, __legacyNoClinic: true }));
+              fallbackUsed = true;
+            }
+          }
+        }
 
         pacientesList.sort((a, b) => (a.nome || "").localeCompare(b.nome || ""));
         profissionaisList.sort((a, b) => (a.nome || "").localeCompare(b.nome || ""));
@@ -133,13 +165,14 @@ const AdicionarAgendamento = () => {
         setPacientes(pacientesList);
         setProfissionais(profissionaisList);
         setTerapias(terapiasList);
+        setUsingLegacyFallback(fallbackUsed);
       } catch (error) {
         console.error("Erro ao carregar opções:", error);
         if (!active) return;
         setError("Erro ao carregar opções. Tente novamente.");
+        setUsingLegacyFallback(false);
       } finally {
-        if (!active) return;
-        setLoadingOptions(false);
+        if (active) setLoadingOptions(false);
       }
     };
 
@@ -148,7 +181,7 @@ const AdicionarAgendamento = () => {
     return () => {
       active = false;
     };
-  }, [authLoading, clinicaId]);
+  }, [authLoading, clinicaId, currentUserData?.nomeClinica]);
 
   useEffect(() => {
     let cancelled = false;
@@ -222,10 +255,16 @@ const AdicionarAgendamento = () => {
     }
 
     const pacienteValido = pacientes.some((paciente) => paciente.id === selectedPaciente);
-    const profissionalValido = profissionais.some((profissional) => profissional.id === selectedProfissional);
-    const terapiaValida = terapias.some((terapia) => terapia.id === selectedTerapia);
+    const profissionalSelecionado = profissionais.find((profissional) => profissional.id === selectedProfissional);
+    const terapiaSelecionada = terapias.find((terapia) => terapia.id === selectedTerapia);
+    const profissionalValido = Boolean(profissionalSelecionado);
+    const terapiaValida = Boolean(terapiaSelecionada);
     if (!pacienteValido || !profissionalValido || !terapiaValida) {
       setError("Seleção inválida. Atualize a página e selecione paciente, profissional e terapia da sua clínica.");
+      return;
+    }
+    if (profissionalSelecionado?.__legacyNoClinic || terapiaSelecionada?.__legacyNoClinic) {
+      setError("Este profissional/terapia é legado e não possui clinicaId. Execute a Migration Tools antes de agendar.");
       return;
     }
 
@@ -339,9 +378,9 @@ const AdicionarAgendamento = () => {
           });
         }
         const batch = writeBatch(db);
+        const createdAppointmentsMeta = [];
         datasRecorrencia.forEach((data, index) => {
           const agendamentoRef = doc(collection(db, "agendamentos"));
-          const historyRef = doc(collection(db, "appointment_history"));
           const agendamentoData = {
             ...agendamentoBase,
             date: data,
@@ -355,22 +394,28 @@ const AdicionarAgendamento = () => {
             recurrenceEndDate: maxIso || null,
           };
           batch.set(agendamentoRef, agendamentoData);
-          batch.set(historyRef, {
-            appointmentId: agendamentoRef.id,
-            clinicaId,
-            patientId: selectedPaciente,
-            professionalId: selectedProfissional,
-            changedByUid: user?.uid || null,
-            changedByEmail: user?.email || null,
-            action: "created",
-            fromStatus: null,
-            toStatus: "scheduled",
-            changedAt: new Date(),
-            fromDate: null,
-            toDate: data,
-          });
+          createdAppointmentsMeta.push({ id: agendamentoRef.id, date: data });
         });
         await batch.commit();
+        // Histórico e notificação são side-effects: não devem impedir persistência do agendamento.
+        await Promise.allSettled(
+          createdAppointmentsMeta.map((item) =>
+            addDoc(collection(db, "appointment_history"), {
+              appointmentId: item.id,
+              clinicaId,
+              patientId: selectedPaciente,
+              professionalId: selectedProfissional,
+              changedByUid: user?.uid || null,
+              changedByEmail: user?.email || null,
+              action: "created",
+              fromStatus: null,
+              toStatus: "scheduled",
+              changedAt: new Date(),
+              fromDate: null,
+              toDate: item.date,
+            })
+          )
+        );
         await queueGuardianAppointmentNotification({
           clinicaId,
           patientId: selectedPaciente,
@@ -397,27 +442,35 @@ const AdicionarAgendamento = () => {
           isRecorrente: false,
         };
         const appointmentRef = await addDoc(collection(db, "agendamentos"), agendamentoData);
-        await addDoc(collection(db, "appointment_history"), {
-          appointmentId: appointmentRef.id,
-          clinicaId,
-          patientId: selectedPaciente,
-          professionalId: selectedProfissional,
-          changedByUid: user?.uid || null,
-          changedByEmail: user?.email || null,
-          action: "created",
-          fromStatus: null,
-          toStatus: "scheduled",
-          changedAt: new Date(),
-          fromDate: null,
-          toDate: dataAgendamento,
-        });
-        await queueGuardianAppointmentNotification({
-          clinicaId,
-          patientId: selectedPaciente,
-          eventType: "appointment_created",
-          appointmentId: appointmentRef.id,
-          summary: `Consulta em ${dataAgendamento} ${horaAgendamento}`,
-        });
+        try {
+          await addDoc(collection(db, "appointment_history"), {
+            appointmentId: appointmentRef.id,
+            clinicaId,
+            patientId: selectedPaciente,
+            professionalId: selectedProfissional,
+            changedByUid: user?.uid || null,
+            changedByEmail: user?.email || null,
+            action: "created",
+            fromStatus: null,
+            toStatus: "scheduled",
+            changedAt: new Date(),
+            fromDate: null,
+            toDate: dataAgendamento,
+          });
+        } catch (historyErr) {
+          console.warn("Falha ao registrar histórico, agendamento foi salvo:", historyErr);
+        }
+        try {
+          await queueGuardianAppointmentNotification({
+            clinicaId,
+            patientId: selectedPaciente,
+            eventType: "appointment_created",
+            appointmentId: appointmentRef.id,
+            summary: `Consulta em ${dataAgendamento} ${horaAgendamento}`,
+          });
+        } catch (notifyErr) {
+          console.warn("Falha ao enfileirar notificação, agendamento foi salvo:", notifyErr);
+        }
         setTotalAgendamentosCriados(1);
         setLastAgendamento(agendamentoData);
       }
@@ -436,8 +489,9 @@ const AdicionarAgendamento = () => {
       setRecurrenceWeeks(12);
       setRecurrenceEndDate("");
       setShowSuccessModal(true);
-    } catch (error) {
-      setError("Erro ao adicionar agendamento. Tente novamente.");
+    } catch (err) {
+      console.error("Erro ao persistir agendamento:", err);
+      setError(`Erro ao adicionar agendamento (${err?.code || "sem-codigo"}): ${err?.message || "falha ao persistir no banco"}`);
     } finally {
       setLoading(false);
     }
@@ -469,6 +523,21 @@ const AdicionarAgendamento = () => {
           )}
           {loadingOptions && (
             <div className="alert alert-info">Carregando pacientes, profissionais e terapias...</div>
+          )}
+          {!loadingOptions && usingLegacyFallback && (
+            <div className="alert alert-info">
+              Alguns dados foram carregados por compatibilidade (registros legados sem clinicaId). Rode a Migration Tools para normalizar.
+            </div>
+          )}
+          {!loadingOptions && !error && profissionais.length === 0 && (
+            <div className="alert alert-error">
+              Nenhum terapeuta/profissional encontrado para sua clínica.
+            </div>
+          )}
+          {!loadingOptions && !error && terapias.length === 0 && (
+            <div className="alert alert-error">
+              Nenhuma terapia encontrada para sua clínica.
+            </div>
           )}
           <form onSubmit={handleSubmit} className="agendamento-form">
             <div className="form-grid">
@@ -577,7 +646,7 @@ const AdicionarAgendamento = () => {
                   <option value="">Selecione um profissional</option>
                   {profissionais.map(profissional => (
                     <option key={profissional.id} value={profissional.id}>
-                      {profissional.nome}
+                      {profissional.nome}{profissional.__legacyNoClinic ? " (legado - migrar)" : ""}
                     </option>
                   ))}
                 </select>
@@ -596,7 +665,7 @@ const AdicionarAgendamento = () => {
                   <option value="">Selecione uma terapia</option>
                   {terapias.map(terapia => (
                     <option key={terapia.id} value={terapia.id}>
-                      {terapia.nome || "Terapia sem nome"}
+                      {(terapia.nome || "Terapia sem nome")}{terapia.__legacyNoClinic ? " (legado - migrar)" : ""}
                     </option>
                   ))}
                 </select>

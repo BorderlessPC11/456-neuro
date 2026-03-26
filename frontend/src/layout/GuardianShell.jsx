@@ -4,13 +4,11 @@ import { useAuth } from "../context/AuthContext";
 import { FaHome, FaChartLine, FaCalendarAlt, FaComments, FaSignOutAlt } from "react-icons/fa";
 import { auth } from "../firebase";
 import "./GuardianShell.css";
-
-const isGuardianRole = (r) => r === "guardian" || r === "responsavel";
+import { isGuardianRole } from "../auth/roles";
 
 export default function GuardianShell() {
-  const { currentUserData, loading } = useAuth();
+  const { currentUserData, loading, role } = useAuth();
   const navigate = useNavigate();
-  const role = currentUserData?.role || "";
 
   useEffect(() => {
     if (loading) return;

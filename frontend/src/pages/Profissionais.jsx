@@ -1,53 +1,30 @@
-// src/pages/Profissionais.jsx
-import React, { useState, useEffect } from "react";
-import { db, auth } from "../firebase";
-import {
-  collection,
-  addDoc,
-  query,
-  where,
-  getDocs,
-  Timestamp,
-  doc,
-  getDoc,
-  updateDoc,
-  deleteDoc,
-} from "firebase/firestore";
-import {
-  createUserWithEmailAndPassword,
-  fetchSignInMethodsForEmail,
-} from "firebase/auth";
-import { useNavigate } from "react-router-dom";
-import {
-  FaWhatsapp,
-  FaArrowUp,
-  FaUser,
-  FaClinicMedical,
-  FaSearch,
-  FaTimes,
-} from "react-icons/fa";
+import React, { useState, useEffect, useCallback } from "react";
+import { FaWhatsapp, FaArrowUp, FaSearch, FaTimes } from "react-icons/fa";
 import "./Profissionais.css";
-import logo from "../assets/logo.png";
 import { useAuth } from "../context/AuthContext";
+import {
+  createTherapistProfile,
+  listTherapistsByClinic,
+  removeTherapist,
+  updateTherapistStatus,
+} from "../features/therapists/therapistsApi";
+import { canManageTherapists } from "../auth/roles";
 
 const Profissionais = () => {
-  const [nomeUsuario, setNomeUsuario] = useState("");
-  const [nomeClinica, setNomeClinica] = useState("");
-  const [role, setRole] = useState("");
-
-  const [nome, setNome] = useState("");
-  const [email, setEmail] = useState("");
-  const [celular, setCelular] = useState("");
-  const [registro, setRegistro] = useState("");
-  const [especialidade, setEspecialidade] = useState("");
-  const [publico, setPublico] = useState("Pediatria");
+  const [form, setForm] = useState({
+    nome: "",
+    email: "",
+    celular: "",
+    registro: "",
+    especialidade: "",
+    publico: "Pediatria",
+    createAuthUser: false,
+    tempPassword: "",
+  });
   const [lista, setLista] = useState([]);
   const [busca, setBusca] = useState("");
-
-  const navigate = useNavigate();
-
-  // Agora PUXA DO CONTEXTO global!
-  const { currentUserData, loading } = useAuth();
+  const [saving, setSaving] = useState(false);
+  const { currentUserData, role } = useAuth();
   const clinicaId = currentUserData?.clinicaId || "";
 
   const especialidades = [
@@ -60,118 +37,74 @@ const Profissionais = () => {
     "Fonoaudióloga(o)",
   ];
 
-  const handleLogout = async () => {
-    await auth.signOut();
-    localStorage.clear();
-    navigate("/");
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!nome || !email || !registro || !clinicaId) return;
-
-    let uidProfissional = "";
+    if (!form.nome || !form.email || !form.registro || !clinicaId) return;
+    if (form.createAuthUser && (form.tempPassword || "").length < 6) {
+      alert("Defina uma senha temporária com pelo menos 6 caracteres.");
+      return;
+    }
 
     try {
-      const signInMethods = await fetchSignInMethodsForEmail(auth, email);
-
-      if (signInMethods.length === 0) {
-        const senha = "neuroverse123";
-        const userCredential = await createUserWithEmailAndPassword(
-          auth,
-          email,
-          senha
-        );
-        uidProfissional = userCredential.user.uid;
-        alert(`Profissional criado com sucesso. Senha padrão: ${senha}`);
-      } else {
-        alert("Email já existe no sistema.");
-      }
-
-      await addDoc(collection(db, "profissionais"), {
+      setSaving(true);
+      await createTherapistProfile({
         clinicaId,
-        nome,
-        email,
-        celular,
-        registro,
-        especialidade,
-        publico,
-        ativo: true,
-        uid: uidProfissional || null,
-        role: "profissional",
-        criadoEm: Timestamp.now(),
+        ...form,
       });
-
-      setNome("");
-      setEmail("");
-      setCelular("");
-      setRegistro("");
-      setEspecialidade("");
-      setPublico("Pediatria");
-
+      setForm({
+        nome: "",
+        email: "",
+        celular: "",
+        registro: "",
+        especialidade: "",
+        publico: "Pediatria",
+        createAuthUser: false,
+        tempPassword: "",
+      });
       buscarProfissionais();
     } catch (error) {
       alert("Erro ao cadastrar profissional: " + error.message);
+    } finally {
+      setSaving(false);
     }
   };
 
-  // BUSCA PROFISSIONAIS DA CLÍNICA CORRETA!
-  const buscarProfissionais = async () => {
+  const buscarProfissionais = useCallback(async () => {
     if (!clinicaId) return;
-    const q = query(
-      collection(db, "profissionais"),
-      where("clinicaId", "==", clinicaId)
-    );
-    const snap = await getDocs(q);
-    const data = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-    setLista(data);
-  };
+    const data = await listTherapistsByClinic(clinicaId);
+    setLista(data.sort((a, b) => (a.nome || "").localeCompare(b.nome || "")));
+  }, [clinicaId]);
 
   const toggleAtivo = async (id, atual) => {
-    const ref = doc(db, "profissionais", id);
-    await updateDoc(ref, { ativo: !atual });
+    await updateTherapistStatus(id, !atual);
     buscarProfissionais();
-    alert(`Profissional ${atual ? "desativado" : "ativado"} com sucesso!`);
   };
 
   const deletarProfissional = async (id) => {
     if (window.confirm("Tem certeza que deseja remover este profissional?")) {
-      await deleteDoc(doc(db, "profissionais", id));
+      await removeTherapist(id);
       buscarProfissionais();
-      alert("Profissional removido com sucesso!");
     }
   };
 
-  // Pegando nome do usuário e nome da clínica
-  useEffect(() => {
-    if (currentUserData) {
-      setNomeUsuario(currentUserData?.nome || "");
-      setRole(currentUserData?.role || "");
-      // Nome da clínica pelo clinicaId
-      const fetchClinica = async () => {
-        if (clinicaId) {
-          const clinicaRef = doc(db, "clinicas", clinicaId);
-          const clinicaSnap = await getDoc(clinicaRef);
-          if (clinicaSnap.exists()) {
-            setNomeClinica(clinicaSnap.data().nome || "");
-          }
-        }
-      };
-      fetchClinica();
-    }
-  }, [currentUserData, clinicaId]);
-
-  // Buscar profissionais sempre que clinicaId mudar
   useEffect(() => {
     if (clinicaId) buscarProfissionais();
-    // eslint-disable-next-line
-  }, [clinicaId]);
+  }, [clinicaId, buscarProfissionais]);
 
   const listaFiltrada = lista.filter(
     (prof) =>
       prof.nome?.toLowerCase().includes(busca.toLowerCase()) ||
       prof.email?.toLowerCase().includes(busca.toLowerCase())
   );
+
+  if (!canManageTherapists(role)) {
+    return (
+      <div className="profissionais-page">
+        <h1>Profissionais da Clínica</h1>
+        <p>Apenas gerentes e administradores podem acessar esta página.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="profissionais-page">
@@ -181,32 +114,32 @@ const Profissionais = () => {
           <input
             type="text"
             placeholder="Nome completo"
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
+            value={form.nome}
+            onChange={(e) => setForm((p) => ({ ...p, nome: e.target.value }))}
             required
           />
           <input
             type="email"
             placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            value={form.email}
+            onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
           />
           <input
             type="text"
             placeholder="WhatsApp"
-            value={celular}
-            onChange={(e) => setCelular(e.target.value)}
+            value={form.celular}
+            onChange={(e) => setForm((p) => ({ ...p, celular: e.target.value }))}
           />
           <input
             type="text"
             placeholder="CRM / Registro"
-            value={registro}
-            onChange={(e) => setRegistro(e.target.value)}
+            value={form.registro}
+            onChange={(e) => setForm((p) => ({ ...p, registro: e.target.value }))}
             required
           />
           <select
-            value={especialidade}
-            onChange={(e) => setEspecialidade(e.target.value)}
+            value={form.especialidade}
+            onChange={(e) => setForm((p) => ({ ...p, especialidade: e.target.value }))}
           >
             <option value="">Selecione a especialidade</option>
             {especialidades.map((esp) => (
@@ -215,12 +148,32 @@ const Profissionais = () => {
               </option>
             ))}
           </select>
-          <select value={publico} onChange={(e) => setPublico(e.target.value)}>
+          <select value={form.publico} onChange={(e) => setForm((p) => ({ ...p, publico: e.target.value }))}>
             <option value="Pediatria">Pediatria</option>
             <option value="Adulto">Adulto</option>
             <option value="Ambos">Ambos</option>
           </select>
-          <button type="submit">Cadastrar Profissional</button>
+          <label style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <input
+              type="checkbox"
+              checked={form.createAuthUser}
+              onChange={(e) => setForm((p) => ({ ...p, createAuthUser: e.target.checked }))}
+            />
+            Criar conta de login agora (opcional)
+          </label>
+          {form.createAuthUser && (
+            <input
+              type="password"
+              placeholder="Senha temporária (mín. 6)"
+              value={form.tempPassword}
+              onChange={(e) => setForm((p) => ({ ...p, tempPassword: e.target.value }))}
+              minLength={6}
+              required
+            />
+          )}
+          <button type="submit" disabled={saving}>
+            {saving ? "Salvando..." : "Cadastrar Profissional"}
+          </button>
         </form>
 
         <div className="busca-box">

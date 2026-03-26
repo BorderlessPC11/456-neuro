@@ -72,6 +72,7 @@ export default function GuardianRegister() {
         role: "guardian",
         clinicaId: invite.clinicaId,
         uid,
+        createdAt: new Date().toISOString(),
         criadoEm: new Date().toISOString(),
       });
 
