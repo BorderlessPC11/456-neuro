@@ -1,11 +1,21 @@
 
 // src/pages/AgendaGeral.jsx
+// Existing: tabela de agendamentos, filtros, edição, status, exclusão em série.
+// Adicionado: vista calendário (mês/semana), detalhe com ABA, recorrência na edição,
+// validação conflito de horário, cores de status centralizadas, fila de notificação ao cancelar/reagendar.
 import React, { useEffect, useMemo, useState } from "react";
 import { addDoc, collection, deleteDoc, doc, getDocs, orderBy, query, updateDoc, where, writeBatch } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
 import "./AgendaGeral.css";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+
+import AppointmentCalendar from "../schedule/AppointmentCalendar";
+import AppointmentStatusBadge from "../schedule/StatusBadge";
+import { APPOINTMENT_STATUS_LABELS } from "../schedule/appointmentStatus";
+import { isAppointmentDateOnOrBeforeToday, findTherapistConflicts } from "../schedule/appointmentTime";
+import { queueGuardianAppointmentNotification } from "../schedule/scheduleNotifications";
+import { createSession, getProgram, listProgramsByPatient } from "../aba/abaApi";
 
 import {
   FaClock,
@@ -26,7 +36,8 @@ import {
   FaSearch,
   FaTimes,
   FaSpinner,
-  FaInfoCircle
+  FaInfoCircle,
+  FaListAlt
 } from "react-icons/fa";
 
 // MODAIS ------------------------
@@ -48,14 +59,17 @@ const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, type = "dang
   );
 };
 
-const EditModal = ({ isOpen, onClose, agendamento, profissionais, onSave, isReschedule = false }) => {
+const EditModal = ({ isOpen, onClose, agendamento, profissionais, clinicaId, onSave, isReschedule = false }) => {
   const [editData, setEditData] = useState({
     date: "",
     time: "",
     profissionalId: "",
     notes: "",
-    reason: ""
+    reason: "",
+    durationMinutes: 50,
+    abaProgramId: "",
   });
+  const [abaPrograms, setAbaPrograms] = useState([]);
 
   useEffect(() => {
     if (agendamento) {
@@ -64,10 +78,31 @@ const EditModal = ({ isOpen, onClose, agendamento, profissionais, onSave, isResc
         time: agendamento.time || "",
         profissionalId: agendamento.professionalId || "",
         notes: agendamento.notes || "",
-        reason: ""
+        reason: "",
+        durationMinutes: agendamento.durationMinutes || 50,
+        abaProgramId: agendamento.abaProgramId || "",
       });
     }
   }, [agendamento]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!agendamento?.patientId || !clinicaId) {
+        setAbaPrograms([]);
+        return;
+      }
+      try {
+        const list = await listProgramsByPatient(agendamento.patientId, clinicaId);
+        if (!cancelled) setAbaPrograms(list);
+      } catch {
+        if (!cancelled) setAbaPrograms([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [agendamento?.patientId, clinicaId]);
 
   const handleSave = () => onSave(editData);
 
@@ -89,11 +124,30 @@ const EditModal = ({ isOpen, onClose, agendamento, profissionais, onSave, isResc
             <input type="time" value={editData.time} onChange={e => setEditData({ ...editData, time: e.target.value })} />
           </div>
           <div className="form-group">
+            <label>Duração (minutos):</label>
+            <input
+              type="number"
+              min={15}
+              step={5}
+              value={editData.durationMinutes}
+              onChange={e => setEditData({ ...editData, durationMinutes: Number(e.target.value) || 50 })}
+            />
+          </div>
+          <div className="form-group">
             <label>Profissional:</label>
             <select value={editData.profissionalId} onChange={e => setEditData({ ...editData, profissionalId: e.target.value })}>
               <option value="">Selecione</option>
               {Object.entries(profissionais).map(([id, profissional]) => (
                 <option key={id} value={id}>{profissional.nome}</option>
+              ))}
+            </select>
+          </div>
+          <div className="form-group">
+            <label>Programa ABA (opcional — para vincular sessão):</label>
+            <select value={editData.abaProgramId} onChange={e => setEditData({ ...editData, abaProgramId: e.target.value })}>
+              <option value="">Nenhum</option>
+              {abaPrograms.map((p) => (
+                <option key={p.id} value={p.id}>{p.nome || p.id}</option>
               ))}
             </select>
           </div>
@@ -156,7 +210,91 @@ const DeleteOptionsModal = ({ isOpen, onClose, agendamento, onDeleteSingle, onDe
 };
 // ==========================
 
-const AgendaGeral = () => {
+
+const RecurrenceEditScopeModal = ({ isOpen, onClose, onPick }) => {
+  if (!isOpen) return null;
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content options-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3>Recorrência</h3>
+          <button type="button" className="close-btn" onClick={onClose}>
+            <FaTimes />
+          </button>
+        </div>
+        <div className="modal-body">
+          <p>Aplicar esta alteração a:</p>
+          <div className="option-buttons">
+            <button type="button" className="option-btn single" onClick={() => onPick("single")}>
+              <FaCalendarTimes /> <strong>Apenas este</strong>
+            </button>
+            <button type="button" className="option-btn series" onClick={() => onPick("future")}>
+              <FaCalendarAlt /> <strong>Este e os próximos da série</strong>
+            </button>
+          </div>
+        </div>
+        <div className="modal-actions">
+          <button type="button" className="modal-btn cancel-btn" onClick={onClose}>
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const RecurrenceCancelScopeModal = ({ isOpen, onClose, onConfirm }) => {
+  const [scope, setScope] = useState("single");
+  const [reason, setReason] = useState("");
+
+  useEffect(() => {
+    if (isOpen) {
+      setScope("single");
+      setReason("");
+    }
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content options-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3>Cancelar em série</h3>
+          <button type="button" className="close-btn" onClick={onClose}>
+            <FaTimes />
+          </button>
+        </div>
+        <div className="modal-body">
+          <p>Cancelar:</p>
+          <div className="option-buttons">
+            <button type="button" className="option-btn single" onClick={() => setScope("single")}>
+              <FaCalendarTimes /> <strong>Apenas este</strong>
+            </button>
+            <button type="button" className="option-btn series" onClick={() => setScope("future")}>
+              <FaCalendarAlt /> <strong>Este e os próximos da série</strong>
+            </button>
+          </div>
+          <div className="form-group" style={{ marginTop: "1rem" }}>
+            <label>Motivo do cancelamento (opcional)</label>
+            <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows="2" placeholder="Escreva aqui, se desejar..." />
+          </div>
+        </div>
+        <div className="modal-actions">
+          <button type="button" className="modal-btn cancel-btn" onClick={onClose}>
+            Voltar
+          </button>
+          <button type="button" className="modal-btn confirm-btn danger" onClick={() => onConfirm(scope, reason)}>
+            Confirmar cancelamento
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const AgendaGeral = ({ variant }) => {
+  const isListPage = variant === "listPage";
   const { user, currentUserData, loading: authLoading } = useAuth();
   const [agendamentos, setAgendamentos] = useState([]);
   const [agendamentosFiltrados, setAgendamentosFiltrados] = useState([]);
@@ -173,25 +311,28 @@ const AgendaGeral = () => {
   const [filtros, setFiltros] = useState({
     profissional: "",
     paciente: "",
-    periodo: "hoje",
+    periodo: isListPage ? "todos" : "hoje",
     status: "todos",
     busca: ""
   });
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: "", message: "", onConfirm: null, type: "danger", statusAction: null });
   const [editModal, setEditModal] = useState({ isOpen: false, agendamento: null, isReschedule: false });
   const [deleteOptionsModal, setDeleteOptionsModal] = useState({ isOpen: false, agendamento: null });
+  const [agendaView, setAgendaView] = useState("list");
+  const [calGranularity, setCalGranularity] = useState("month");
+  const [calAnchor, setCalAnchor] = useState(() => new Date());
+  const [detailAppointment, setDetailAppointment] = useState(null);
+  const [recurrenceEditModal, setRecurrenceEditModal] = useState({ open: false, editData: null, current: null, isReschedule: false });
+  const [recurrenceCancelModal, setRecurrenceCancelModal] = useState({ open: false, agendamento: null });
 
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isListPage) setAgendaView("list");
+  }, [isListPage]);
   const clinicaId = currentUserData?.clinicaId || "";
 
-  const STATUS_LABELS = {
-    scheduled: "Agendado",
-    confirmed: "Confirmado",
-    canceled: "Cancelado",
-    rescheduled: "Reagendado",
-    no_show: "Falta",
-    completed: "Concluído"
-  };
+  const STATUS_LABELS = APPOINTMENT_STATUS_LABELS;
 
   const normalizeStatus = (status) => {
     if (!status) return "scheduled";
@@ -217,6 +358,10 @@ const AgendaGeral = () => {
     status: normalizeStatus(raw.status),
     isRecorrente: Boolean(raw.isRecorrente),
     grupoRecorrenciaId: raw.grupoRecorrenciaId || null,
+    durationMinutes: Number(raw.durationMinutes) || 50,
+    abaProgramId: raw.abaProgramId || "",
+    abaSessionId: raw.abaSessionId || "",
+    cancelReason: raw.cancelReason || "",
     createdAt: raw.createdAt || null,
     updatedAt: raw.updatedAt || null
   });
@@ -397,7 +542,14 @@ const AgendaGeral = () => {
   }, [agendamentos, filtros, pacientes, profissionais]);
 
   // Ações
-  const limparFiltros = () => setFiltros({ profissional: "", paciente: "", periodo: "todos", status: "todos", busca: "" });
+  const limparFiltros = () =>
+    setFiltros({
+      profissional: "",
+      paciente: "",
+      periodo: isListPage ? "todos" : "hoje",
+      status: "todos",
+      busca: "",
+    });
 
   const closeConfirmModal = () => {
     setReasonInput("");
@@ -460,6 +612,15 @@ const AgendaGeral = () => {
         reason: reason || null
       });
       setAgendamentos((prev) => prev.map((item) => (item.id === agendamento.id ? { ...item, ...payload } : item)));
+      if (newStatus === "canceled") {
+        await queueGuardianAppointmentNotification({
+          clinicaId: agendamento.clinicaId,
+          patientId: agendamento.patientId,
+          eventType: "appointment_canceled",
+          appointmentId: agendamento.id,
+          summary: `Consulta cancelada em ${agendamento.date} ${agendamento.time || ""}`,
+        });
+      }
       closeConfirmModal();
     } catch (error) {
       console.error("Erro ao atualizar status:", error);
@@ -467,42 +628,89 @@ const AgendaGeral = () => {
     }
   };
 
-  const salvarEdicao = async (editData) => {
+  const beginEditSave = (editData) => {
     const current = editModal.agendamento;
     if (!current) return;
+    if (current.grupoRecorrenciaId && !editModal.isReschedule) {
+      setRecurrenceEditModal({
+        open: true,
+        editData,
+        current,
+        isReschedule: false,
+      });
+      setEditModal({ isOpen: false, agendamento: null, isReschedule: false });
+      return;
+    }
+    flushAppointmentEdit(editData, current, editModal.isReschedule, "single");
+  };
 
+  const flushAppointmentEdit = async (editData, current, isReschedule, scope) => {
+    setRecurrenceEditModal({ open: false, editData: null, current: null, isReschedule: false });
     const existsProfessional = Boolean(profissionais[editData.profissionalId]);
     if (!existsProfessional) {
       alert("Profissional inválido para esta clínica.");
       return;
     }
 
-    const payload = {
-      professionalId: editData.profissionalId,
-      profissionalId: editData.profissionalId,
-      date: editData.date,
-      data: editData.date,
-      time: editData.time,
-      hora: editData.time,
-      notes: editData.notes || "",
-      observacoes: editData.notes || "",
-      updatedAt: new Date()
-    };
+    const targets =
+      scope === "future" && current.grupoRecorrenciaId
+        ? agendamentos.filter(
+            (a) => a.grupoRecorrenciaId === current.grupoRecorrenciaId && a.date >= current.date
+          )
+        : [current];
 
-    if (editModal.isReschedule) {
-      payload.status = "rescheduled";
-      payload.rescheduleReason = editData.reason || "";
-      payload.rescheduledFrom = {
-        date: current.date,
-        time: current.time,
-        professionalId: current.professionalId
-      };
-      payload.rescheduledAt = new Date();
+    for (const t of targets) {
+      const useDate = t.id === current.id ? editData.date : t.date;
+      const dur =
+        t.id === current.id
+          ? Number(editData.durationMinutes) || 50
+          : t.durationMinutes || 50;
+      const hits = findTherapistConflicts(agendamentos, {
+        date: useDate,
+        time: editData.time,
+        durationMinutes: dur,
+        professionalId: editData.profissionalId,
+        ignoreId: t.id,
+      });
+      if (hits.length) {
+        alert("Conflito de horário: o profissional já possui outro agendamento sobreposto.");
+        return;
+      }
     }
 
+    const now = new Date();
     try {
-      await updateDoc(doc(db, "agendamentos", current.id), payload);
-      if (editModal.isReschedule) {
+      const batch = writeBatch(db);
+      for (const t of targets) {
+        const useDate = t.id === current.id ? editData.date : t.date;
+        const payload = {
+          professionalId: editData.profissionalId,
+          profissionalId: editData.profissionalId,
+          date: useDate,
+          data: useDate,
+          time: editData.time,
+          hora: editData.time,
+          notes: editData.notes || "",
+          observacoes: editData.notes || "",
+          durationMinutes: Number(editData.durationMinutes) || 50,
+          abaProgramId: editData.abaProgramId || "",
+          updatedAt: now,
+        };
+        if (isReschedule && t.id === current.id) {
+          payload.status = "rescheduled";
+          payload.rescheduleReason = editData.reason || "";
+          payload.rescheduledFrom = {
+            date: current.date,
+            time: current.time,
+            professionalId: current.professionalId,
+          };
+          payload.rescheduledAt = now;
+        }
+        batch.update(doc(db, "agendamentos", t.id), payload);
+      }
+      await batch.commit();
+
+      if (isReschedule) {
         await recordHistory(current, {
           action: "reschedule",
           fromStatus: current.status,
@@ -511,7 +719,14 @@ const AgendaGeral = () => {
           fromDate: current.date,
           toDate: editData.date,
           fromTime: current.time,
-          toTime: editData.time
+          toTime: editData.time,
+        });
+        await queueGuardianAppointmentNotification({
+          clinicaId: current.clinicaId,
+          patientId: current.patientId,
+          eventType: "appointment_rescheduled",
+          appointmentId: current.id,
+          summary: `Consulta reagendada para ${editData.date} ${editData.time}`,
         });
       } else {
         await recordHistory(current, {
@@ -521,24 +736,29 @@ const AgendaGeral = () => {
           fromDate: current.date,
           toDate: editData.date,
           fromTime: current.time,
-          toTime: editData.time
+          toTime: editData.time,
         });
       }
 
       setAgendamentos((prev) =>
-        prev.map((ag) =>
-          ag.id === current.id
-            ? {
-                ...ag,
-                professionalId: editData.profissionalId,
-                date: editData.date,
-                time: editData.time,
-                notes: editData.notes || "",
-                updatedAt: payload.updatedAt,
-                status: payload.status || ag.status
-              }
-            : ag
-        )
+        prev.map((ag) => {
+          const hit = targets.find((x) => x.id === ag.id);
+          if (!hit) return ag;
+          const useDate = hit.id === current.id ? editData.date : hit.date;
+          const st =
+            isReschedule && hit.id === current.id ? "rescheduled" : ag.status;
+          return {
+            ...ag,
+            professionalId: editData.profissionalId,
+            date: useDate,
+            time: editData.time,
+            notes: editData.notes || "",
+            durationMinutes: Number(editData.durationMinutes) || 50,
+            abaProgramId: editData.abaProgramId || "",
+            updatedAt: now,
+            status: st,
+          };
+        })
       );
       setEditModal({ isOpen: false, agendamento: null, isReschedule: false });
     } catch (error) {
@@ -547,28 +767,102 @@ const AgendaGeral = () => {
     }
   };
 
-  // Utilidades
-  const formatarData = (dataString) => new Date(dataString).toLocaleDateString("pt-BR") || dataString;
-  const formatarHora = (horaString) => horaString || "Não informado";
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "scheduled":
-        return "#3b82f6";
-      case "confirmed":
-        return "#22c55e";
-      case "canceled":
-        return "#ef4444";
-      case "rescheduled":
-        return "#f59e0b";
-      case "no_show":
-        return "#f97316";
-      case "completed":
-        return "#10b981";
-      default:
-        return "#6b7280";
+  const flushAppointmentCancel = async (current, scope, reason) => {
+    if (!current?.id) return;
+    setRecurrenceCancelModal({ open: false, agendamento: null });
+
+    const reasonTrim = (reason || "").trim();
+
+    const targets =
+      scope === "future" && current.grupoRecorrenciaId
+        ? agendamentos.filter(
+            (a) =>
+              a.grupoRecorrenciaId === current.grupoRecorrenciaId &&
+              a.date >= current.date &&
+              a.status !== "canceled"
+          )
+        : current.status === "canceled"
+          ? []
+          : [current];
+
+    if (targets.length === 0) return;
+
+    const now = new Date();
+    const fromLabel = new Date(current.date).toLocaleDateString("pt-BR");
+
+    try {
+      const batch = writeBatch(db);
+      targets.forEach((t) => {
+        const upd = { status: "canceled", updatedAt: now };
+        if (reasonTrim) upd.cancelReason = reasonTrim;
+        batch.update(doc(db, "agendamentos", t.id), upd);
+      });
+      await batch.commit();
+
+      for (const t of targets) {
+        await recordHistory(t, {
+          action: "status_update",
+          fromStatus: t.status,
+          toStatus: "canceled",
+          reason: reasonTrim || null,
+        });
+      }
+
+      if (targets.length === 1) {
+        const t0 = targets[0];
+        await queueGuardianAppointmentNotification({
+          clinicaId: t0.clinicaId,
+          patientId: t0.patientId,
+          eventType: "appointment_canceled",
+          appointmentId: t0.id,
+          summary: `Consulta cancelada em ${t0.date} ${t0.time || ""}`,
+        });
+      } else {
+        const byPatient = new Map();
+        for (const t of targets) {
+          const list = byPatient.get(t.patientId) || [];
+          list.push(t);
+          byPatient.set(t.patientId, list);
+        }
+        for (const [, list] of byPatient) {
+          const t0 = list[0];
+          await queueGuardianAppointmentNotification({
+            clinicaId: t0.clinicaId,
+            patientId: t0.patientId,
+            eventType: "appointment_canceled",
+            appointmentId: t0.id,
+            summary: `${list.length} consulta(s) cancelada(s) a partir de ${fromLabel}`,
+          });
+        }
+      }
+
+      setAgendamentos((prev) =>
+        prev.map((item) => {
+          const hit = targets.find((x) => x.id === item.id);
+          if (!hit) return item;
+          return {
+            ...item,
+            status: "canceled",
+            cancelReason: reasonTrim || item.cancelReason,
+            updatedAt: now,
+          };
+        })
+      );
+      setDetailAppointment((d) => {
+        if (!d) return null;
+        const hit = targets.find((x) => x.id === d.id);
+        if (!hit) return d;
+        return { ...d, status: "canceled", cancelReason: reasonTrim || d.cancelReason, updatedAt: now };
+      });
+    } catch (error) {
+      console.error("Erro ao cancelar em série:", error);
+      alert("Erro ao cancelar agendamento(s).");
     }
   };
 
+  // Utilidades
+  const formatarData = (dataString) => new Date(dataString).toLocaleDateString("pt-BR") || dataString;
+  const formatarHora = (horaString) => horaString || "Não informado";
   const onStatusActionClick = (agendamento, actionType) => {
     const actionMeta = {
       confirmed: {
@@ -601,6 +895,16 @@ const AgendaGeral = () => {
 
     const meta = actionMeta[actionType];
     if (!meta) return;
+
+    if (actionType === "canceled" && agendamento.grupoRecorrenciaId) {
+      setRecurrenceCancelModal({ open: true, agendamento });
+      return;
+    }
+
+    if (actionType === "completed" && !isAppointmentDateOnOrBeforeToday(agendamento.date)) {
+      alert("Só é possível marcar como concluído agendamentos com data de hoje ou anteriores.");
+      return;
+    }
 
     setReasonInput("");
     setConfirmModal({
@@ -638,6 +942,67 @@ const AgendaGeral = () => {
     []
   );
 
+
+  const openAbaFromAppointment = async (ag) => {
+    if (!ag?.patientId) return;
+    if (!ag?.abaSessionId) {
+      if (!ag?.abaProgramId) {
+        alert(
+          "Associe um programa ABA ao agendamento (via edição na ficha em breve) ou inicie a sessão pela ficha do paciente, aba ABA."
+        );
+        return;
+      }
+      try {
+        const program = await getProgram(ag.abaProgramId);
+        if (!program) throw new Error("Programa ABA não encontrado.");
+        const ref = await createSession({
+          programId: ag.abaProgramId,
+          patientId: ag.patientId,
+          clinicaId: ag.clinicaId,
+          therapistId: user?.uid || "",
+          program,
+          appointmentId: ag.id,
+          sessionDate: ag.date,
+        });
+        await updateDoc(doc(db, "agendamentos", ag.id), {
+          abaSessionId: ref.id,
+          updatedAt: new Date(),
+        });
+        setAgendamentos((prev) =>
+          prev.map((x) => (x.id === ag.id ? { ...x, abaSessionId: ref.id } : x))
+        );
+        if (detailAppointment?.id === ag.id) {
+          setDetailAppointment((d) => (d ? { ...d, abaSessionId: ref.id } : null));
+        }
+        navigate(`/detalhe-paciente/${ag.patientId}?section=aba&abaSessionId=${ref.id}`);
+      } catch (e) {
+        console.error(e);
+        alert(e.message || "Não foi possível criar a sessão ABA.");
+      }
+      return;
+    }
+    navigate(`/detalhe-paciente/${ag.patientId}?section=aba&abaSessionId=${ag.abaSessionId}`);
+  };
+
+  const reativarCancelado = async (ag) => {
+    try {
+      await updateDoc(doc(db, "agendamentos", ag.id), {
+        status: "scheduled",
+        cancelReason: "",
+        updatedAt: new Date(),
+      });
+      setAgendamentos((prev) =>
+        prev.map((x) => (x.id === ag.id ? { ...x, status: "scheduled", cancelReason: "" } : x))
+      );
+      setDetailAppointment((d) =>
+        d && d.id === ag.id ? { ...d, status: "scheduled", cancelReason: "" } : d
+      );
+    } catch {
+      alert("Erro ao reativar agendamento.");
+    }
+  };
+
+
   if (authLoading || loadingAgendamentos) return (
     <div className="agenda-geral-page">
       <div className="agenda-geral-container">
@@ -664,11 +1029,60 @@ const AgendaGeral = () => {
     <div className="agenda-geral-page">
       <div className="agenda-geral-container">
           <div className="agenda-header">
-            <h1>📅 Agenda</h1>
-            <button className="add-agendamento-btn" onClick={() => navigate("/adicionar-agendamento")}>
-              <FaPlusCircle /> Novo
-            </button>
+            <h1>{isListPage ? "📋 Lista de agenda" : "📅 Agenda"}</h1>
+            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center" }}>
+              {isListPage ? (
+                <Link className="limpar-filtros-btn" to="/schedule" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "0.35rem" }}>
+                  <FaCalendarAlt /> Agenda completa
+                </Link>
+              ) : (
+                <Link className="limpar-filtros-btn" to="/schedule/list" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "0.35rem" }}>
+                  <FaListAlt /> Lista ampliada
+                </Link>
+              )}
+              <button className="add-agendamento-btn" onClick={() => navigate("/adicionar-agendamento")}>
+                <FaPlusCircle /> Novo
+              </button>
+            </div>
           </div>
+          {!isListPage && (
+            <div className="agenda-view-toolbar" style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", alignItems: "center", marginBottom: "1rem" }}>
+              <div style={{ display: "flex", gap: "0.35rem" }}>
+                <button
+                  type="button"
+                  className={agendaView === "list" ? "add-agendamento-btn" : "limpar-filtros-btn"}
+                  onClick={() => setAgendaView("list")}
+                >
+                  Lista
+                </button>
+                <button
+                  type="button"
+                  className={agendaView === "calendar" ? "add-agendamento-btn" : "limpar-filtros-btn"}
+                  onClick={() => setAgendaView("calendar")}
+                >
+                  Calendário
+                </button>
+              </div>
+              {agendaView === "calendar" && (
+                <div style={{ display: "flex", gap: "0.35rem" }}>
+                  <button
+                    type="button"
+                    className={calGranularity === "month" ? "add-agendamento-btn" : "limpar-filtros-btn"}
+                    onClick={() => setCalGranularity("month")}
+                  >
+                    Mês
+                  </button>
+                  <button
+                    type="button"
+                    className={calGranularity === "week" ? "add-agendamento-btn" : "limpar-filtros-btn"}
+                    onClick={() => setCalGranularity("week")}
+                  >
+                    Semana
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
           <div className="filtros-container">
             <div className="filtros-header">
               <h3><FaFilter /> Filtros</h3>
@@ -726,7 +1140,16 @@ const AgendaGeral = () => {
               <button onClick={() => setRefreshKey((prev) => prev + 1)}>Atualizar</button>
             </div>
           )}
-          {agendamentosFiltrados.length > 0 ? (
+          {!isListPage && agendaView === "calendar" ? (
+            <AppointmentCalendar
+              appointments={agendamentosFiltrados}
+              pacientes={pacientes}
+              view={calGranularity}
+              anchorDate={calAnchor}
+              onNavigate={(d) => setCalAnchor(d)}
+              onSelectAppointment={(a) => setDetailAppointment(a)}
+            />
+          ) : agendamentosFiltrados.length > 0 ? (
             <div className="table-container">
               <table className="agendamentos-table">
                 <thead>
@@ -743,7 +1166,7 @@ const AgendaGeral = () => {
                 </thead>
                 <tbody>
                   {agendamentosFiltrados.map((agendamento) => (
-                    <tr key={agendamento.id}>
+                    <tr key={agendamento.id} onClick={() => setDetailAppointment(agendamento)} style={{ cursor: "pointer" }}>
                       <td className="data-cell" title={formatarData(agendamento.date)}><FaCalendar /> {formatarData(agendamento.date)}</td>
                       <td className="hora-cell" title={formatarHora(agendamento.time)}><FaClock /> {formatarHora(agendamento.time)}</td>
                       <td
@@ -758,13 +1181,15 @@ const AgendaGeral = () => {
                       </td>
                       <td className="profissional-cell" title={profissionais[agendamento.professionalId]?.nome}><FaUsers /> {profissionais[agendamento.professionalId]?.nome || "Não informado"}</td>
                       <td className="terapia-cell" title={terapias[agendamento.therapyId]?.nome}><FaFileAlt /> {terapias[agendamento.therapyId]?.nome || "Não informada"}</td>
-                      <td className="status-cell"><span className="status-badge-table" style={{ background: getStatusColor(agendamento.status) }}>{STATUS_LABELS[agendamento.status] || "Agendado"}</span></td>
+                      <td className="status-cell">
+                        <AppointmentStatusBadge status={agendamento.status} className="status-badge-table" />
+                      </td>
                       <td className="recorrencia-cell">{agendamento.grupoRecorrenciaId ? <span className="recorrencia-badge"><FaCalendarAlt /> Rec.</span> : <span className="unico-badge"><FaCalendarCheck /> Ún.</span>}</td>
                       <td className="acoes-cell">
-                        <div className="action-buttons">
-                          <button className="action-btn edit-btn" title="Editar" onClick={() => setEditModal({ isOpen: true, agendamento, isReschedule: false })}><FaEdit /></button>
+                        <div className="action-buttons" onClick={(e) => e.stopPropagation()}>
+                          <button className="action-btn edit-btn" title="Editar" disabled={agendamento.status === "canceled"} onClick={() => { if (agendamento.status === "canceled") return; setEditModal({ isOpen: true, agendamento, isReschedule: false }); }}><FaEdit /></button>
                           <button className="action-btn status-btn" title="Confirmar" onClick={() => onStatusActionClick(agendamento, "confirmed")}>OK</button>
-                          <button className="action-btn status-btn reschedule-btn" title="Reagendar" onClick={() => setEditModal({ isOpen: true, agendamento, isReschedule: true })}>R</button>
+                          <button className="action-btn status-btn reschedule-btn" title="Reagendar" disabled={agendamento.status === "canceled"} onClick={() => { if (agendamento.status === "canceled") return; setEditModal({ isOpen: true, agendamento, isReschedule: true }); }}>R</button>
                           <button className="action-btn status-btn complete-btn" title="Concluir" onClick={() => onStatusActionClick(agendamento, "completed")}>✓</button>
                           <button className="action-btn status-btn no-show-btn" title="Falta" onClick={() => onStatusActionClick(agendamento, "no_show")}>F</button>
                           <button className="action-btn status-btn cancel-btn-action" title="Cancelar" onClick={() => onStatusActionClick(agendamento, "canceled")}>X</button>
@@ -782,6 +1207,73 @@ const AgendaGeral = () => {
               <h3>Nenhum agendamento</h3>
               <p>Ajuste filtros ou adicione um!</p>
               <button className="create-first-btn" onClick={() => navigate("/adicionar-agendamento")}><FaPlusCircle /> Criar</button>
+            </div>
+          )}
+          <RecurrenceEditScopeModal
+            isOpen={recurrenceEditModal.open}
+            onClose={() => setRecurrenceEditModal({ open: false, editData: null, current: null, isReschedule: false })}
+            onPick={(scope) => {
+              const { editData, current } = recurrenceEditModal;
+              if (!editData || !current) return;
+              flushAppointmentEdit(editData, current, false, scope);
+            }}
+          />
+          <RecurrenceCancelScopeModal
+            isOpen={recurrenceCancelModal.open}
+            onClose={() => setRecurrenceCancelModal({ open: false, agendamento: null })}
+            onConfirm={(scope, reason) => {
+              const ag = recurrenceCancelModal.agendamento;
+              if (ag) flushAppointmentCancel(ag, scope, reason);
+            }}
+          />
+          {detailAppointment && (
+            <div className="modal-overlay" onClick={() => setDetailAppointment(null)}>
+              <div className="modal-content edit-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 480 }}>
+                <div className="modal-header">
+                  <h3>Detalhe do agendamento</h3>
+                  <button type="button" className="close-btn" onClick={() => setDetailAppointment(null)}>
+                    <FaTimes />
+                  </button>
+                </div>
+                <div className="modal-body">
+                  <p><strong>Data:</strong> {formatarData(detailAppointment.date)} {detailAppointment.time}</p>
+                  <p><strong>Duração:</strong> {detailAppointment.durationMinutes || 50} min</p>
+                  <p><strong>Paciente:</strong> {pacientes[detailAppointment.patientId]?.nome || detailAppointment.patientId}</p>
+                  <p><strong>Profissional:</strong> {profissionais[detailAppointment.professionalId]?.nome || "—"}</p>
+                  <p><strong>Terapia:</strong> {terapias[detailAppointment.therapyId]?.nome || "—"}</p>
+                  <p style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+                    <strong>Status:</strong> <AppointmentStatusBadge status={detailAppointment.status} />
+                  </p>
+                  <p><strong>Observações:</strong> {detailAppointment.notes || "—"}</p>
+                  {detailAppointment.status === "completed" && (
+                    <button type="button" className="modal-btn confirm-btn success" onClick={() => openAbaFromAppointment(detailAppointment)}>
+                      Abrir / criar sessão ABA
+                    </button>
+                  )}
+                  {detailAppointment.status === "canceled" && (
+                    <button type="button" className="modal-btn confirm-btn success" onClick={() => reativarCancelado(detailAppointment)}>
+                      Reativar (voltar para agendado)
+                    </button>
+                  )}
+                </div>
+                <div className="modal-actions">
+                  <button type="button" className="modal-btn cancel-btn" onClick={() => setDetailAppointment(null)}>
+                    Fechar
+                  </button>
+                  {detailAppointment.status !== "canceled" && (
+                    <button
+                      type="button"
+                      className="modal-btn confirm-btn success"
+                      onClick={() => {
+                        setEditModal({ isOpen: true, agendamento: detailAppointment, isReschedule: false });
+                        setDetailAppointment(null);
+                      }}
+                    >
+                      Editar
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
           )}
           <ConfirmModal {...confirmModal} onClose={closeConfirmModal} onConfirm={handleConfirmFromModal}>
@@ -802,8 +1294,9 @@ const AgendaGeral = () => {
             onClose={() => setEditModal({ isOpen: false, agendamento: null, isReschedule: false })}
             agendamento={editModal.agendamento}
             profissionais={profissionais}
+            clinicaId={clinicaId}
             isReschedule={editModal.isReschedule}
-            onSave={(data) => salvarEdicao(data)}
+            onSave={(data) => beginEditSave(data)}
           />
           <DeleteOptionsModal
             isOpen={deleteOptionsModal.isOpen}

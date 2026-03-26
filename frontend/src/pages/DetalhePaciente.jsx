@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { doc, getDoc, updateDoc, collection, getDocs } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, auth, storage } from "../firebase";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, Link, useSearchParams } from "react-router-dom";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import {
@@ -33,13 +33,25 @@ import {
   FaCalendarCheck,
   FaFileMedical,
   FaFolderOpen,
-  FaChartBar
+  FaChartBar,
+  FaBrain,
+  FaUserFriends
 } from "react-icons/fa";
 import "./DetalhePaciente.css";
+import { useAuth } from "../context/AuthContext";
+import AbaPatientModule from "../components/aba/AbaPatientModule";
+import InviteGuardianForm from "../guardian/components/InviteGuardianForm";
+import GuardianAccessList from "../guardian/components/GuardianAccessList";
+import TherapistPatientMessages from "../guardian/components/TherapistPatientMessages";
 
 const DetalhePaciente = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const abaDeepLinkSessionId = searchParams.get("abaSessionId") || "";
+
+  const { user, currentUserData } = useAuth();
+  const userRole = currentUserData?.role || "";
   const [paciente, setPaciente] = useState(null);
   const [editData, setEditData] = useState({
     anamnese: [],
@@ -96,6 +108,13 @@ const DetalhePaciente = () => {
   const [commentModalOpen, setCommentModalOpen] = useState(false);
   const [selectedAnamneseIndex, setSelectedAnamneseIndex] = useState(null);
   const [activeSection, setActiveSection] = useState("ficha");
+
+  useEffect(() => {
+    const sec = searchParams.get("section");
+    if (sec === "aba") setActiveSection("aba");
+  }, [searchParams]);
+
+  const [guardianAreaRefresh, setGuardianAreaRefresh] = useState(0);
 
   const clinicaId = localStorage.getItem("clinicaId");
 
@@ -758,6 +777,22 @@ return (
             >
               <FaFolderOpen /> Documentos
             </button>
+            {userRole !== "responsavel" && userRole !== "guardian" && (
+              <button
+                className={`submenu-btn ${activeSection === "aba" ? "active" : ""}`}
+                onClick={() => setActiveSection("aba")}
+              >
+                <FaBrain /> Análise comportamental
+              </button>
+            )}
+            {userRole !== "responsavel" && userRole !== "guardian" && (
+              <button
+                className={`submenu-btn ${activeSection === "guardian_area" ? "active" : ""}`}
+                onClick={() => setActiveSection("guardian_area")}
+              >
+                <FaUserFriends /> Área do responsável
+              </button>
+            )}
           </div>
 
           <div className="detalhe-paciente-sections">
@@ -1668,6 +1703,46 @@ return (
                     </button>
                   </div>
                 )}
+              </div>
+            )}
+
+            {activeSection === "aba" && userRole !== "responsavel" && userRole !== "guardian" && (
+              <div className="detalhe-section">
+                <h2>
+                  <FaBrain /> Análise comportamental (ABA)
+                </h2>
+                <AbaPatientModule patientId={id} pacienteNome={paciente.nome || ""} deepLinkSessionId={abaDeepLinkSessionId} />
+              </div>
+            )}
+
+            {activeSection === "guardian_area" && userRole !== "responsavel" && userRole !== "guardian" && (
+              <div className="detalhe-section">
+                <h2>
+                  <FaUserFriends /> Área do responsável
+                </h2>
+                <p style={{ color: "#64748b" }}>
+                  Convites, acesso ao aplicativo e mensagens com a família (somente leitura do lado dos
+                  responsáveis para dados clínicos).
+                </p>
+                <InviteGuardianForm
+                  patientId={id}
+                  clinicaId={clinicaId}
+                  therapistId={user?.uid}
+                  patientNome={paciente.nome || ""}
+                  onCreated={() => setGuardianAreaRefresh((k) => k + 1)}
+                />
+                <GuardianAccessList
+                  patientId={id}
+                  clinicaId={clinicaId}
+                  refreshKey={guardianAreaRefresh}
+                />
+                <TherapistPatientMessages
+                  patientId={id}
+                  clinicaId={clinicaId}
+                  therapistId={user?.uid}
+                  userRole={userRole}
+                  profissionalIdPaciente={paciente.profissionalId || ""}
+                />
               </div>
             )}
 

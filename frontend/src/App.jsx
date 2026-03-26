@@ -24,7 +24,16 @@ import Despesas from "./pages/Despesas";
 import Tarefas from "./pages/Tarefas";
 import Usuarios from "./pages/Usuarios"; // Novo import
 import Cadastro from "./pages/Cadastro";
+import DetalhePaciente from "./pages/DetalhePaciente";
+import AbaResponsavel from "./pages/AbaResponsavel";
 import AppShellLayout from "./layout/AppShell.jsx";
+import GuardianShell from "./layout/GuardianShell.jsx";
+import GuardianRegister from "./pages/GuardianRegister";
+import GuardianDashboard from "./pages/guardian/GuardianDashboard";
+import GuardianProgressHub from "./pages/guardian/GuardianProgressHub";
+import GuardianProgramProgress from "./pages/guardian/GuardianProgramProgress";
+import GuardianAppointments from "./pages/guardian/GuardianAppointments";
+import GuardianMessages from "./pages/guardian/GuardianMessages";
 
 import "./App.css";
 
@@ -34,9 +43,19 @@ function App() {
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/cadastro" element={<Cadastro />} />
+        <Route path="/guardian/register/:inviteId" element={<GuardianRegister />} />
+        <Route element={<GuardianShell />}>
+          <Route path="/guardian" element={<GuardianDashboard />} />
+          <Route path="/guardian/progress" element={<GuardianProgressHub />} />
+          <Route path="/guardian/programs/:programId" element={<GuardianProgramProgress />} />
+          <Route path="/guardian/appointments" element={<GuardianAppointments />} />
+          <Route path="/guardian/messages" element={<GuardianMessages />} />
+        </Route>
         <Route element={<AppShellLayout />}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/pacientes" element={<Pacientes />} />
+          <Route path="/detalhe-paciente/:id" element={<DetalhePaciente />} />
+          <Route path="/aba-responsavel" element={<AbaResponsavel />} />
           <Route path="/evolucao" element={<EvolucaoDiaria />} />
           <Route path="/anamnese" element={<Anamnese />} />
           <Route path="/documentos-paciente" element={<DocumentosPaciente />} />
@@ -44,6 +63,8 @@ function App() {
           <Route path="/terapias" element={<Terapias />} />
           <Route path="/planejamento" element={<Planejamento />} />
           <Route path="/testes" element={<Testes />} />
+          <Route path="/schedule" element={<AgendaGeral />} />
+          <Route path="/schedule/list" element={<AgendaGeral variant="listPage" />} />
           <Route path="/agenda-geral" element={<AgendaGeral />} />
           <Route path="/adicionar-agendamento" element={<AdicionarAgendamento />} />
           <Route path="/notificacoes" element={<Notificacoes />} />

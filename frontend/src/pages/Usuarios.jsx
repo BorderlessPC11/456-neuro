@@ -7,6 +7,8 @@ import "./Usuarios.css";
 const roles = [
   { value: "recepcionista", label: "Recepcionista" },
   { value: "gerente", label: "Gerente" },
+  { value: "guardian", label: "Responsável / família (área do guardião)" },
+  { value: "responsavel", label: "Responsável (legado — use guardião)" },
 ];
 
 const Usuarios = () => {
@@ -54,8 +56,10 @@ const Usuarios = () => {
         setModalMessage("Usuário atualizado com sucesso!");
         setEditId(null);
       } else {
+        const clinicaId = localStorage.getItem("clinicaId") || "";
         await addDoc(collection(db, "usuarios"), {
           ...form,
+          clinicaId,
           senha: form.cpf, // Senha padrão como CPF
           criadoEm: new Date().toISOString(),
         });

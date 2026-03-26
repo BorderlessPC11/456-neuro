@@ -1,6 +1,12 @@
+// AdicionarAgendamento — base: paciente, profissional, terapia, recorrência.
+// Extensão scheduling: duração, programa ABA opcional, semanas/data fim, validação de sobreposição, fila de notificação para responsáveis.
+
 import React, { useEffect, useMemo, useState } from "react";
 import { addDoc, collection, doc, getDocs, query, where, writeBatch } from "firebase/firestore";
 import { db } from "../firebase";
+import { findTherapistConflicts } from "../schedule/appointmentTime";
+import { queueGuardianAppointmentNotification } from "../schedule/scheduleNotifications";
+import { listProgramsByPatient } from "../aba/abaApi";
 import { useAuth } from "../context/AuthContext";
 import "./AdicionarAgendamento.css";
 
@@ -72,6 +78,11 @@ const AdicionarAgendamento = () => {
   const [isRecorrente, setIsRecorrente] = useState(false);
   const [diasSemana, setDiasSemana] = useState([]);
   const [frequenciaSemanal, setFrequenciaSemanal] = useState(1);
+  const [duracaoMinutos, setDuracaoMinutos] = useState(50);
+  const [abaProgramId, setAbaProgramId] = useState("");
+  const [abaPrograms, setAbaPrograms] = useState([]);
+  const [recurrenceWeeks, setRecurrenceWeeks] = useState(12);
+  const [recurrenceEndDate, setRecurrenceEndDate] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -139,6 +150,25 @@ const AdicionarAgendamento = () => {
     };
   }, [authLoading, clinicaId]);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!selectedPaciente || !clinicaId) {
+        setAbaPrograms([]);
+        return;
+      }
+      try {
+        const list = await listProgramsByPatient(selectedPaciente, clinicaId);
+        if (!cancelled) setAbaPrograms(list);
+      } catch {
+        if (!cancelled) setAbaPrograms([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedPaciente, clinicaId]);
+
   const pacientesFiltrados = useMemo(() => {
     if (!patientSearch.trim()) return pacientes;
     const termo = patientSearch.toLowerCase();
@@ -163,23 +193,24 @@ const AdicionarAgendamento = () => {
       setDiasSemana(diasSemana.filter(day => day !== value));
     }
   };
-  const gerarDatasRecorrencia = (dataInicio, diasSemana, numSemanas = 12) => {
+  const gerarDatasRecorrencia = (dataInicio, diasSemana, numSemanas = 12, maxDateIso = null) => {
     const datas = [];
-    const dataInicioObj = new Date(dataInicio);
+    const dataInicioObj = new Date(dataInicio + "T12:00:00");
     const diasMap = { domingo: 0, segunda: 1, terca: 2, quarta: 3, quinta: 4, sexta: 5, sabado: 6 };
-    const diasNumeros = diasSemana.map(dia => diasMap[dia]);
-    for (let semana = 0; semana < numSemanas; semana++) {
-      for (let diaNum of diasNumeros) {
+    const diasNumeros = diasSemana.map((dia) => diasMap[dia]);
+    const maxSemanas = Math.min(Math.max(1, numSemanas), 104);
+    for (let semana = 0; semana < maxSemanas; semana++) {
+      for (const diaNum of diasNumeros) {
         const data = new Date(dataInicioObj);
-        const diasParaAdicionar = (diaNum - dataInicioObj.getDay() + 7) % 7 + (semana * 7);
-        if (semana === 0 && diasParaAdicionar < 0) continue;
+        const diasParaAdicionar = (diaNum - dataInicioObj.getDay() + 7) % 7 + semana * 7;
         data.setDate(dataInicioObj.getDate() + diasParaAdicionar);
-        if (data >= dataInicioObj) {
-          datas.push(data.toISOString().split("T")[0]);
-        }
+        if (data < dataInicioObj) continue;
+        const iso = data.toISOString().split("T")[0];
+        if (maxDateIso && iso > maxDateIso) continue;
+        datas.push(iso);
       }
     }
-    return datas.sort();
+    return [...new Set(datas)].sort();
   };
 
   // Submissão
@@ -209,6 +240,30 @@ const AdicionarAgendamento = () => {
     setLoading(true);
     setError("");
     try {
+      const maxIso = recurrenceEndDate && isRecorrente ? recurrenceEndDate : null;
+      if (maxIso && maxIso < dataAgendamento) {
+        setError("Data final da recorrência deve ser após a data de início.");
+        setLoading(false);
+        return;
+      }
+
+      const existSnap = await getDocs(
+        query(collection(db, "agendamentos"), where("clinicaId", "==", clinicaId))
+      );
+      const existingRows = existSnap.docs
+        .map((d) => {
+          const x = d.data();
+          const pid = x.professionalId || x.profissionalId || "";
+          return {
+            id: d.id,
+            date: x.date || x.data || "",
+            time: x.time || x.hora || "",
+            professionalId: pid,
+            durationMinutes: Number(x.durationMinutes) || 50,
+          };
+        })
+        .filter((row) => row.professionalId === selectedProfissional);
+
       const agendamentoBase = {
         clinicaId,
         patientId: selectedPaciente,
@@ -219,6 +274,8 @@ const AdicionarAgendamento = () => {
         terapiaId: selectedTerapia,
         time: horaAgendamento,
         hora: horaAgendamento,
+        durationMinutes: Number(duracaoMinutos) || 50,
+        abaProgramId: abaProgramId || "",
         notes: observacoes,
         observacoes,
         isRecorrente: isRecorrente,
@@ -235,11 +292,52 @@ const AdicionarAgendamento = () => {
           selectedPacienteObj?.plano ||
           "Particular",
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
+
+      const assertNoConflict = (dateIso, virtualRows) => {
+        const hits = findTherapistConflicts([...existingRows, ...virtualRows], {
+          date: dateIso,
+          time: horaAgendamento,
+          durationMinutes: Number(duracaoMinutos) || 50,
+          professionalId: selectedProfissional,
+        });
+        if (hits.length) {
+          setError(
+            "Conflito de agenda: o profissional já possui outro atendimento sobreposto nesse horário."
+          );
+          return false;
+        }
+        return true;
+      };
+
       if (isRecorrente) {
         const grupoRecorrenciaId = `grupo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        const datasRecorrencia = gerarDatasRecorrencia(dataAgendamento, diasSemana, 12);
+        const datasRecorrencia = gerarDatasRecorrencia(
+          dataAgendamento,
+          diasSemana,
+          recurrenceWeeks,
+          maxIso || null
+        );
+        if (datasRecorrencia.length === 0) {
+          setError("Nenhuma data gerada para a recorrência. Ajuste semanas ou data final.");
+          setLoading(false);
+          return;
+        }
+        const virtual = [];
+        for (const data of datasRecorrencia) {
+          if (!assertNoConflict(data, virtual)) {
+            setLoading(false);
+            return;
+          }
+          virtual.push({
+            id: `v_${virtual.length}`,
+            date: data,
+            time: horaAgendamento,
+            durationMinutes: Number(duracaoMinutos) || 50,
+            professionalId: selectedProfissional,
+          });
+        }
         const batch = writeBatch(db);
         datasRecorrencia.forEach((data, index) => {
           const agendamentoRef = doc(collection(db, "agendamentos"));
@@ -254,6 +352,7 @@ const AdicionarAgendamento = () => {
             diasSemanaOriginais: diasSemana,
             frequenciaSemanalOriginal: frequenciaSemanal,
             dataInicioOriginal: dataAgendamento,
+            recurrenceEndDate: maxIso || null,
           };
           batch.set(agendamentoRef, agendamentoData);
           batch.set(historyRef, {
@@ -268,18 +367,29 @@ const AdicionarAgendamento = () => {
             toStatus: "scheduled",
             changedAt: new Date(),
             fromDate: null,
-            toDate: data
+            toDate: data,
           });
         });
         await batch.commit();
+        await queueGuardianAppointmentNotification({
+          clinicaId,
+          patientId: selectedPaciente,
+          eventType: "appointment_created",
+          appointmentId: null,
+          summary: `${datasRecorrencia.length} consulta(s) agendada(s) a partir de ${dataAgendamento}`,
+        });
         setTotalAgendamentosCriados(datasRecorrencia.length);
         setLastAgendamento({
           ...agendamentoBase,
           data: dataAgendamento,
           isRecorrente: true,
-          frequenciaSemanal: frequenciaSemanal
+          frequenciaSemanal: frequenciaSemanal,
         });
       } else {
+        if (!assertNoConflict(dataAgendamento, [])) {
+          setLoading(false);
+          return;
+        }
         const agendamentoData = {
           ...agendamentoBase,
           date: dataAgendamento,
@@ -299,7 +409,14 @@ const AdicionarAgendamento = () => {
           toStatus: "scheduled",
           changedAt: new Date(),
           fromDate: null,
-          toDate: dataAgendamento
+          toDate: dataAgendamento,
+        });
+        await queueGuardianAppointmentNotification({
+          clinicaId,
+          patientId: selectedPaciente,
+          eventType: "appointment_created",
+          appointmentId: appointmentRef.id,
+          summary: `Consulta em ${dataAgendamento} ${horaAgendamento}`,
         });
         setTotalAgendamentosCriados(1);
         setLastAgendamento(agendamentoData);
@@ -314,6 +431,10 @@ const AdicionarAgendamento = () => {
       setIsRecorrente(false);
       setDiasSemana([]);
       setFrequenciaSemanal(1);
+      setDuracaoMinutos(50);
+      setAbaProgramId("");
+      setRecurrenceWeeks(12);
+      setRecurrenceEndDate("");
       setShowSuccessModal(true);
     } catch (error) {
       setError("Erro ao adicionar agendamento. Tente novamente.");
@@ -514,6 +635,34 @@ const AdicionarAgendamento = () => {
                   />
                 </div>
               </div>
+              <div className="form-group">
+                <label htmlFor="duracao">Duração (minutos)</label>
+                <input
+                  id="duracao"
+                  type="number"
+                  min={15}
+                  step={5}
+                  value={duracaoMinutos}
+                  onChange={(e) => setDuracaoMinutos(Number(e.target.value) || 50)}
+                  disabled={authLoading || loading || loadingOptions}
+                />
+              </div>
+              <div className="form-group full-width">
+                <label htmlFor="abaProgram">Programa ABA (opcional)</label>
+                <select
+                  id="abaProgram"
+                  value={abaProgramId}
+                  onChange={(e) => setAbaProgramId(e.target.value)}
+                  disabled={authLoading || loading || loadingOptions || !selectedPaciente}
+                >
+                  <option value="">Nenhum</option>
+                  {abaPrograms.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.nome || p.id}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <div className="form-group full-width">
                 <label htmlFor="observacoes">
                   <FaFileAlt /> Observações
@@ -537,7 +686,7 @@ const AdicionarAgendamento = () => {
                 />
                 <label htmlFor="isRecorrente">
                   <FaCalendarAlt style={{ marginRight: "0.5rem" }} />
-                  Agendamento Recorrente (12 semanas)
+                  Agendamento recorrente
                 </label>
               </div>
               {isRecorrente && (
@@ -558,6 +707,26 @@ const AdicionarAgendamento = () => {
                         <option value="4">4x por semana</option>
                         <option value="5">5x por semana</option>
                       </select>
+                    </div>
+                    <div className="form-group">
+                      <label>Número de semanas</label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={104}
+                        value={recurrenceWeeks}
+                        onChange={(e) => setRecurrenceWeeks(Number(e.target.value) || 12)}
+                        disabled={authLoading || loading || loadingOptions}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Data final opcional</label>
+                      <input
+                        type="date"
+                        value={recurrenceEndDate}
+                        onChange={(e) => setRecurrenceEndDate(e.target.value)}
+                        disabled={authLoading || loading || loadingOptions}
+                      />
                     </div>
                   </div>
                   <div className="dias-semana-section">

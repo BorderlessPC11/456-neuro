@@ -15,6 +15,7 @@ import {
   FaEnvelope,
   FaListAlt,
   FaSignOutAlt,
+  FaBrain,
 } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
 import { auth, db } from "../firebase";
@@ -46,6 +47,15 @@ const IconRail = ({ isDrawerOpen, onDrawerOpenChange }) => {
   }, [currentUserData?.clinicaId]);
 
   const items = useMemo(() => {
+    if (role === "guardian" || role === "responsavel") {
+      return [
+        { label: "Início", path: "/guardian", icon: <FaHome /> },
+        { label: "Progresso", path: "/guardian/progress", icon: <FaBrain /> },
+        { label: "Consultas", path: "/guardian/appointments", icon: <FaCalendarCheck /> },
+        { label: "Mensagens", path: "/guardian/messages", icon: <FaEnvelope /> },
+      ];
+    }
+
     const base = [
       { label: "Dashboard", path: "/dashboard", icon: <FaHome /> },
       {
@@ -76,7 +86,8 @@ const IconRail = ({ isDrawerOpen, onDrawerOpenChange }) => {
       { label: "PDI", path: "/planejamento", icon: <FaCalendarAlt /> },
       { label: "Terapias", path: "/terapias", icon: <FaFileAlt /> },
       { label: "Testes", path: "/testes", icon: <FaListAlt /> },
-      { label: "Agenda Geral", path: "/agenda-geral", icon: <FaCalendarCheck /> },
+      { label: "Agenda", path: "/schedule", icon: <FaCalendarCheck /> },
+      { label: "Agenda (lista)", path: "/schedule/list", icon: <FaListAlt /> },
       {
         label: "Adicionar Agendamento",
         path: "/adicionar-agendamento",

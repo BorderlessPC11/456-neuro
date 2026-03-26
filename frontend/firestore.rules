@@ -25,6 +25,69 @@ service cloud.firestore {
       return isAuthenticated() && requestData.clinicaId is string && requestData.clinicaId == currentClinicaId();
     }
 
+    function userRole() {
+      return currentUserDoc().data.role;
+    }
+
+    function isResponsavel() {
+      return isAuthenticated() && userRole() == "responsavel";
+    }
+
+    function isGuardian() {
+      return isAuthenticated() && (userRole() == "guardian" || userRole() == "responsavel");
+    }
+
+    function isTherapistSide() {
+      return isAuthenticated() && !isGuardian();
+    }
+
+    function isStaffAdmin() {
+      return userRole() in ["admin", "admin_master", "master"];
+    }
+
+    function guardianAccessDocId(patientId, guardianUid) {
+      return patientId + "_" + guardianUid;
+    }
+
+    function hasActiveGuardianAccess(patientId) {
+      let pid = guardianAccessDocId(patientId, request.auth.uid);
+      let abaOk = exists(/databases/$(database)/documents/aba_guardian_access/$(pid))
+        && get(/databases/$(database)/documents/aba_guardian_access/$(pid)).data.clinicaId == currentClinicaId()
+        && get(/databases/$(database)/documents/aba_guardian_access/$(pid)).data.revogadoEm == null;
+      let linkOk = exists(/databases/$(database)/documents/guardian_patient_links/$(pid))
+        && get(/databases/$(database)/documents/guardian_patient_links/$(pid)).data.clinicaId == currentClinicaId()
+        && get(/databases/$(database)/documents/guardian_patient_links/$(pid)).data.active == true;
+      return abaOk || linkOk;
+    }
+
+    function guardianCanReadSharedSession() {
+      return isGuardian()
+        && resource.data.compartilhadoComResponsavel == true
+        && hasActiveGuardianAccess(resource.data.patientId);
+    }
+
+    function guardianCanReadProgram() {
+      return isGuardian()
+        && hasActiveGuardianAccess(resource.data.patientId);
+    }
+
+    function guardianCanReadPatientDoc(pacienteId) {
+      return isGuardian() && hasActiveGuardianAccess(pacienteId);
+    }
+
+    function threadDoc(threadId) {
+      return get(/databases/$(database)/documents/guardian_threads/$(threadId)).data;
+    }
+
+    function canReadGuardianThread(threadId) {
+      return canReadClinicResource(threadDoc(threadId))
+        && (
+          (isGuardian() && threadDoc(threadId).guardianUid == request.auth.uid)
+          || request.auth.uid == threadDoc(threadId).therapistId
+          || isStaffAdmin()
+        );
+    }
+
     function validAppointmentCreate() {
       return request.resource.data.patientId is string
         && request.resource.data.professionalId is string
@@ -83,31 +146,35 @@ service cloud.firestore {
     }
 
     match /pacientes/{pacienteId} {
-      allow read: if canReadClinicResource(resource.data);
+      allow read: if canReadClinicResource(resource.data)
+        || guardianCanReadPatientDoc(pacienteId);
       allow create: if canWriteClinicResource(request.resource.data);
       allow update: if canReadClinicResource(resource.data) && canWriteClinicResource(request.resource.data);
       allow delete: if canReadClinicResource(resource.data);
     }
 
     match /profissionais/{profissionalId} {
-      allow read: if canReadClinicResource(resource.data);
+      allow read: if canReadClinicResource(resource.data)
+        || (isGuardian() && resource.data.clinicaId == currentClinicaId());
       allow create: if canWriteClinicResource(request.resource.data);
       allow update: if canReadClinicResource(resource.data) && canWriteClinicResource(request.resource.data);
       allow delete: if canReadClinicResource(resource.data);
     }
 
     match /terapias/{terapiaId} {
-      allow read: if canReadClinicResource(resource.data);
+      allow read: if canReadClinicResource(resource.data)
+        || (isGuardian() && resource.data.clinicaId == currentClinicaId());
       allow create: if canWriteClinicResource(request.resource.data);
       allow update: if canReadClinicResource(resource.data) && canWriteClinicResource(request.resource.data);
       allow delete: if canReadClinicResource(resource.data);
     }
 
     match /agendamentos/{agendamentoId} {
-      allow read: if canReadClinicResource(resource.data);
-      allow create: if canWriteClinicResource(request.resource.data) && validAppointmentCreate();
-      allow update: if canReadClinicResource(resource.data) && canWriteClinicResource(request.resource.data) && validAppointmentUpdate();
-      allow delete: if canReadClinicResource(resource.data);
+      allow read: if canReadClinicResource(resource.data)
+        || (isGuardian() && hasActiveGuardianAccess(resource.data.patientId));
+      allow create: if isTherapistSide() && canWriteClinicResource(request.resource.data) && validAppointmentCreate();
+      allow update: if isTherapistSide() && canReadClinicResource(resource.data) && canWriteClinicResource(request.resource.data) && validAppointmentUpdate();
+      allow delete: if isTherapistSide() && canReadClinicResource(resource.data);
     }
 
     match /appointment_history/{historyId} {
@@ -138,6 +205,132 @@ service cloud.firestore {
       allow read: if canReadClinicResource(resource.data);
       allow create: if canWriteClinicResource(request.resource.data);
       allow update, delete: if canReadClinicResource(resource.data) && canWriteClinicResource(request.resource.data);
+    }
+
+    match /aba_programs/{programId} {
+      allow read: if canReadClinicResource(resource.data) && (isTherapistSide() || guardianCanReadProgram());
+      allow create: if isTherapistSide() && canWriteClinicResource(request.resource.data);
+      allow update, delete: if isTherapistSide() && canReadClinicResource(resource.data) && canWriteClinicResource(request.resource.data);
+    }
+
+    match /aba_sessions/{sessionId} {
+      allow read: if canReadClinicResource(resource.data) && (isTherapistSide() || guardianCanReadSharedSession());
+      allow create: if isTherapistSide() && canWriteClinicResource(request.resource.data);
+      allow update, delete: if isTherapistSide() && canReadClinicResource(resource.data) && canWriteClinicResource(request.resource.data);
+
+      match /trials/{trialId} {
+        allow read: if isTherapistSide() && canReadClinicResource(get(/databases/$(database)/documents/aba_sessions/$(sessionId)).data);
+        allow create: if isTherapistSide() && canWriteClinicResource(get(/databases/$(database)/documents/aba_sessions/$(sessionId)).data);
+        allow update: if isTherapistSide() && canReadClinicResource(get(/databases/$(database)/documents/aba_sessions/$(sessionId)).data) && canWriteClinicResource(get(/databases/$(database)/documents/aba_sessions/$(sessionId)).data);
+        allow delete: if isTherapistSide() && canReadClinicResource(get(/databases/$(database)/documents/aba_sessions/$(sessionId)).data) && canWriteClinicResource(get(/databases/$(database)/documents/aba_sessions/$(sessionId)).data);
+      }
+    }
+
+    match /aba_guardian_access/{accessId} {
+      allow read: if canReadClinicResource(resource.data)
+        && (isTherapistSide() || resource.data.guardianUid == request.auth.uid);
+      allow create: if (
+          isTherapistSide() && canWriteClinicResource(request.resource.data)
+        ) || (
+          isAuthenticated()
+          && request.resource.data.guardianUid == request.auth.uid
+          && canWriteClinicResource(request.resource.data)
+          && request.resource.data.invitationId is string
+          && exists(/databases/$(database)/documents/guardian_invitations/$(request.resource.data.invitationId))
+          && get(/databases/$(database)/documents/guardian_invitations/$(request.resource.data.invitationId)).data.status == "pending"
+          && get(/databases/$(database)/documents/guardian_invitations/$(request.resource.data.invitationId)).data.email == request.auth.token.email
+          && get(/databases/$(database)/documents/guardian_invitations/$(request.resource.data.invitationId)).data.patientId == request.resource.data.patientId
+          && get(/databases/$(database)/documents/guardian_invitations/$(request.resource.data.invitationId)).data.clinicaId == request.resource.data.clinicaId
+          && request.time < get(/databases/$(database)/documents/guardian_invitations/$(request.resource.data.invitationId)).data.expiresAt
+        );
+      allow update: if isTherapistSide() && canReadClinicResource(resource.data) && canWriteClinicResource(request.resource.data);
+      allow delete: if false;
+    }
+
+    match /guardian_invitations/{inviteId} {
+      allow read: if (
+          !isAuthenticated()
+          && resource.data.status == "pending"
+          && request.time < resource.data.expiresAt
+        )
+        || (isTherapistSide() && canReadClinicResource(resource.data))
+        || (
+          isAuthenticated()
+          && resource.data.status == "pending"
+          && request.auth.token.email == resource.data.email
+          && request.time < resource.data.expiresAt
+        );
+
+      allow create: if isTherapistSide()
+        && canWriteClinicResource(request.resource.data)
+        && request.resource.data.patientId is string
+        && request.resource.data.email is string
+        && request.resource.data.status == "pending";
+
+      allow update: if isTherapistSide() && canReadClinicResource(resource.data) && canWriteClinicResource(request.resource.data)
+        || (
+          isAuthenticated()
+          && resource.data.status == "pending"
+          && request.resource.data.status == "accepted"
+          && request.auth.token.email == resource.data.email
+          && request.time < resource.data.expiresAt
+        );
+    }
+
+    match /guardian_patient_links/{linkId} {
+      allow read: if canReadClinicResource(resource.data)
+        && (isTherapistSide() || resource.data.guardianUid == request.auth.uid);
+
+      allow create: if request.auth.uid == request.resource.data.guardianUid
+        && canWriteClinicResource(request.resource.data)
+        && request.resource.data.active == true
+        && request.resource.data.invitationId is string
+        && exists(/databases/$(database)/documents/guardian_invitations/$(request.resource.data.invitationId))
+        && get(/databases/$(database)/documents/guardian_invitations/$(request.resource.data.invitationId)).data.status == "pending"
+        && get(/databases/$(database)/documents/guardian_invitations/$(request.resource.data.invitationId)).data.email == request.auth.token.email
+        && get(/databases/$(database)/documents/guardian_invitations/$(request.resource.data.invitationId)).data.patientId == request.resource.data.patientId
+        && get(/databases/$(database)/documents/guardian_invitations/$(request.resource.data.invitationId)).data.clinicaId == request.resource.data.clinicaId
+        && request.time < get(/databases/$(database)/documents/guardian_invitations/$(request.resource.data.invitationId)).data.expiresAt;
+
+      allow update: if isTherapistSide() && canReadClinicResource(resource.data) && canWriteClinicResource(request.resource.data);
+    }
+
+    match /guardian_threads/{threadId} {
+      allow read: if canReadGuardianThread(threadId);
+      allow create: if canWriteClinicResource(request.resource.data)
+        && request.resource.data.patientId is string
+        && request.resource.data.guardianUid is string
+        && request.resource.data.therapistId is string
+        && (
+          (isGuardian() && request.resource.data.guardianUid == request.auth.uid && hasActiveGuardianAccess(request.resource.data.patientId))
+          || (isTherapistSide() && request.auth.uid == request.resource.data.therapistId)
+        );
+      allow update: if canReadGuardianThread(threadId)
+        && (
+          isTherapistSide()
+          || (isGuardian() && resource.data.guardianUid == request.auth.uid)
+        );
+
+      match /messages/{messageId} {
+        allow read: if canReadGuardianThread(threadId);
+        allow create: if canReadGuardianThread(threadId)
+          && request.resource.data.senderId == request.auth.uid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 1000
+          && request.resource.data.senderRole in ["guardian", "therapist"];
+        allow update: if canReadGuardianThread(threadId);
+      }
+    }
+
+
+    match /appointment_guardian_notifications/{nid} {
+      allow read: if isTherapistSide() && canReadClinicResource(resource.data);
+      allow create: if isTherapistSide() && canWriteClinicResource(request.resource.data)
+        && request.resource.data.patientId is string
+        && request.resource.data.eventType is string
+        && request.resource.data.processed == false;
+      allow update, delete: if false;
     }
 
     match /{document=**} {

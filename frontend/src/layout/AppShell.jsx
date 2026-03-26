@@ -15,6 +15,12 @@ const AppShellLayout = () => {
     if (!loading && !currentUserData) navigate("/");
   }, [loading, currentUserData, navigate]);
 
+  useEffect(() => {
+    if (loading || !currentUserData) return;
+    const r = currentUserData.role;
+    if (r === "guardian" || r === "responsavel") navigate("/guardian", { replace: true });
+  }, [loading, currentUserData, navigate]);
+
   if (loading) {
     return (
       <div className="app-shell-loading" role="status" aria-live="polite">

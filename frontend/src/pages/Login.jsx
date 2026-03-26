@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../firebase";
+import { doc, getDoc } from "firebase/firestore";
+import { auth, db } from "../firebase";
 import { useAuth } from "../context/AuthContext"; 
 import logo from "../assets/logo.png"; // 🛑 Assegure-se que este caminho está correto!
 import './Login.css'; 
@@ -20,8 +21,15 @@ function Login() {
     setError(null);
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      navigate("/dashboard");
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      const uid = cred.user?.uid;
+      let role = "";
+      if (uid) {
+        const snap = await getDoc(doc(db, "usuarios", uid));
+        if (snap.exists()) role = snap.data()?.role || "";
+      }
+      if (role === "guardian" || role === "responsavel") navigate("/guardian");
+      else navigate("/dashboard");
     } catch (err) {
       let errorMessage = "Erro ao fazer login. Verifique suas credenciais.";
       if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
@@ -34,8 +42,9 @@ function Login() {
   };
 
   if (!authLoading && currentUserData) {
-    navigate("/dashboard");
-    return null; 
+    const r = currentUserData.role;
+    navigate(r === "guardian" || r === "responsavel" ? "/guardian" : "/dashboard");
+    return null;
   }
 
   if (authLoading) {

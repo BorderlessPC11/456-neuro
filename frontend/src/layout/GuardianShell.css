@@ -1,0 +1,74 @@
+.guardian-shell {
+  display: flex;
+  min-height: 100vh;
+  background: #f1f5f9;
+}
+
+.guardian-shell-nav {
+  width: 220px;
+  flex-shrink: 0;
+  background: #0f172a;
+  color: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem 0;
+}
+
+.guardian-shell-brand {
+  font-weight: 800;
+  padding: 0 1rem 1rem;
+  font-size: 1.05rem;
+  border-bottom: 1px solid #334155;
+  margin-bottom: 0.5rem;
+}
+
+.guardian-shell-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1rem;
+  color: #cbd5e1;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.guardian-shell-link:hover {
+  background: #1e293b;
+  color: #fff;
+}
+
+.guardian-shell-link.active {
+  background: #334155;
+  color: #fff;
+}
+
+.guardian-shell-logout {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.guardian-shell-logout:hover {
+  color: #fff;
+}
+
+.guardian-shell-main {
+  flex: 1;
+  padding: 1.25rem;
+  overflow: auto;
+}
+
+.guardian-shell-loading {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+}
